@@ -36,3 +36,4 @@ Neue Prüfungen vor dem Abschnitt „C: Sicherung“ in `run.py` einfügen (`che
 Echte Unterrichtsmaterialien nicht ins Repository legen – Testdateien im Skript erzeugen.
 * Mehrere Tage: Trenner „+ Tag“ im Vorhaben (verschieben, umbenennen, löschen, SuS nur mit Material danach, nicht in Suche, Sicherung)
 * Titelbild mit interaktiver Seite (Advance Organizer): nur HTML/Link, Knopf auf dem Bild, Vergrößern bleibt, `um:material:` öffnet Material, Kursansicht, SuS-Download, ohne Bild nur Knopf, Link statt Datei, Sicherung
+* Einfügen (Strg+V): Datei über Vorhaben direkt, ohne Ziel Fenster zum Zuordnen (vor der Seite, Vorhaben pro Datei), Screenshot-Name, Datei-Feld im Dialog, Text als Notiz; Kurztitel aus „P9 Stromkreis - 3 …“, Originalname im Export; Enter speichert, Entf löscht; Papierkorb (Rückgängig, Wiederherstellen, Leeren, nach 30 Tagen)

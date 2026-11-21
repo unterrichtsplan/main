@@ -252,6 +252,7 @@ dialog::backdrop{background:rgba(10,14,20,.5)}
 @media (max-width:600px){dialog{margin:auto 0 0;max-width:100vw}.sheet-form{border-radius:22px 22px 0 0;margin:0}}
 .sheet-actions{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem;flex-wrap:wrap;position:sticky;bottom:-1.2rem;background:var(--sheet);padding:.6rem 0 .2rem}
 .sheet-actions .left{margin-right:auto}
+.sheet-actions .btn{order:2}.sheet-actions .btn.primary{order:3}.sheet-actions .btn.left{order:1}
 
 /* Zugang */
 .lock{min-height:calc(100vh - 140px);display:grid;place-items:center;padding:1rem}
@@ -295,6 +296,10 @@ dialog::backdrop{background:rgba(10,14,20,.5)}
 .center-spin{display:grid;place-items:center;height:100%;min-height:200px}
 .toast{position:fixed;left:50%;bottom:calc(1.2rem + env(safe-area-inset-bottom,0px));transform:translate(-50%,200%);visibility:hidden;background:var(--ink);color:var(--sheet);border-radius:12px;padding:.75rem 1.1rem;z-index:70;transition:transform .25s;max-width:90vw;font-weight:600}
 .toast.on{transform:translate(-50%,0);visibility:visible}
+.toast-btn{margin-left:.8rem;border:0;background:transparent;color:inherit;font:inherit;font-weight:800;text-decoration:underline;text-underline-offset:3px;cursor:pointer;min-height:32px}
+.korb-list{list-style:none;margin:.6rem 0 0;padding:0}
+.korb-list li{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.55rem 0;border-top:1px solid var(--line)}
+.korb-list small{display:block;color:var(--muted);font-size:.85rem}
 footer{max-width:1040px;margin:0 auto;padding:0 1rem 2rem;display:flex;justify-content:flex-end}
 footer a{display:inline-flex;align-items:center;gap:.35rem;color:var(--muted);text-decoration:none;font-size:.9rem;min-height:40px}
 .reihe-actions{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
@@ -343,6 +348,11 @@ table.sync td{padding:.3rem .4rem;border-bottom:1px solid var(--line);vertical-a
 table.sync select,table.sync input[type=text]{min-height:38px;padding:.3rem .5rem;font-size:.92rem;min-width:110px}
 table.sync input[type=checkbox]{width:20px;height:20px;accent-color:var(--primary)}
 table.sync tr.off td:not(:first-child){opacity:.45}
+/* Sammel-Upload als Fenster vor der Seite */
+.viewer.sync-modal{background:rgba(15,20,28,.5);align-items:center;justify-content:center;padding:3vh 3vw}
+.sync-panel{background:var(--page);width:min(1240px,100%);max-height:100%;min-height:0;display:flex;flex-direction:column;border-radius:18px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.sync-panel .sync-body{min-height:0}
+@media (max-width:700px){.viewer.sync-modal{padding:0}.sync-panel{border-radius:0;height:100%}}
 table.sync .fname{font-size:.82rem;color:var(--muted);word-break:break-all;min-width:150px;max-width:260px}
 .st{display:inline-block;font-size:.76rem;font-weight:700;border-radius:999px;padding:.12rem .55rem;white-space:nowrap;background:var(--soft);color:var(--muted)}
 .st.neu{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
@@ -857,7 +867,13 @@ function klpFor(fach, jgName){
 var busyPre = '';
 function busy(t){ var b = $('#busy'); if(t === false){ b.classList.remove('on'); return; } $('#busy-text').textContent = busyPre + t; b.classList.add('on'); }
 var toastTimer;
-function toast(t){ var el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(function(){ el.classList.remove('on'); }, 3800); }
+function toast(t, aktion){
+  var el = $('#toast'); el.textContent = t;
+  if(aktion){ var b = document.createElement('button'); b.type = 'button'; b.className = 'toast-btn'; b.textContent = aktion.label;
+    b.onclick = function(){ el.classList.remove('on'); aktion.fn(); }; el.appendChild(b); }
+  el.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(function(){ el.classList.remove('on'); }, aktion ? 8000 : 3800);
+}
+function toastMitAktion(){ var el = $('#toast'); return el.classList.contains('on') && !!el.querySelector('button'); }
 function fail(e){
   busy(false);
   var m = e && e.message ? e.message : String(e);
@@ -889,7 +905,7 @@ function pumpe(){
   speicherAnzeige();
   saveData(msgs.length > 3 ? msgs.slice(0, 3).join(' · ') + ' …' : msgs.join(' · ')).then(function(){
     warte.forEach(function(w){ w.res(); });
-    if(!saveQ.offen) toast('Gespeichert – für alle sichtbar in ca. 1–2 Minuten.');
+    if(!saveQ.offen && !toastMitAktion()) toast('Gespeichert – für alle sichtbar in ca. 1–2 Minuten.');
     // nicht mehr genutzte Dateien entfernen; ein Fehler hier schadet nicht (Datei bleibt nur liegen)
     return weg.length ? deleteFiles(weg, true).catch(function(){}) : null;
   }, function(e){
@@ -1418,6 +1434,8 @@ var INFO = [
   ['Notizen', 'Schwerpunktziel, Verlaufsplan und Reflexion pro Vorhaben – nur in der Lehrkraft-Ansicht. Keine Schülernamen eintragen.', true],
   ['Suche', 'Durchsucht alle Fächer und Jahrgänge, auch Dateinamen, Hinweise, Checklisten und Notizen. Umlaute können weggelassen werden.', true],
   ['Ordner hochladen', 'Fach und Jahrgang aus Ordnernamen wie „2526 M 6“, Reihe = Ordner, Nummer im Dateinamen = Vorhaben. PDF und Word mit gleichem Namen: PDF für SuS, Word für Lehrkräfte. Erneut ausführen gleicht ab; am Laptop Gelöschtes bleibt hier.', true],
+  ['Papierkorb', 'Gelöschtes Material landet im Papierkorb (Einstellungen → Speicher) und lässt sich 30 Tage lang wiederherstellen. Danach wird es endgültig gelöscht – oder vorher über „Papierkorb leeren“.', true],
+  ['Einfügen (Strg+V)', 'Am Laptop Dateien aus dem Explorer oder Screenshots kopieren und einfügen: Maus über ein Vorhaben → Datei kommt direkt dorthin. Sonst öffnet sich das Fenster zum Zuordnen. Text wird zur Notiz. In einem offenen Dialog füllt Strg+V das Datei-Feld. Im Material-Dialog: Enter speichert, Entf löscht.', true],
   ['Datei ersetzen', 'Neue Datei mit gleichem Dateinamen hochladen – Titel, Sichtbarkeit und Kurse bleiben. Oder Material antippen und unter „Datei“ eine neue wählen.', true],
   ['Speichern', 'Änderungen erscheinen sofort, gespeichert wird im Hintergrund („Speichert …“ unten links). Seite erst danach schließen. SuS sehen den neuen Stand nach ca. 1–2 Minuten.', true],
   ['Sichern und Wiederherstellen', '„Alles herunterladen“ (mit Prüfungspasswort) ist die Sicherung. Wiederherstellen: „Importieren“ → „Alles ersetzen“.', true],
@@ -1477,7 +1495,7 @@ function renderSettings(tab){
         + '<option value="gym"' + (sf === 'gym' ? ' selected' : '') + '>Gymnasium</option></select></label></section>';
     }
   }
-  if(tab === 'speicher') html += storagePanel();
+  if(tab === 'speicher') html += storagePanel() + korbPanel();
   return html;
 }
 function storagePanel(){
@@ -1578,7 +1596,7 @@ function wireLock(){
     working = true; err.textContent = 'Prüfe …';
     deriveKek(code, zugang.basis.salt, zugang.iter).then(function(kek){
       return unlockBasis(kek).then(function(){ if($('#remember').checked) saveJSON(KEK_KEY, bytesToB64(kek)); });
-    }).then(function(){ return loadAktuell(); }).then(function(){ render(); })
+    }).then(function(){ return loadAktuell(); }).then(function(){ render(); korbAufraeumen(); })
       .catch(function(){ working = false; code = ''; paint(); err.textContent = 'Der Code stimmt nicht.'; pins.classList.remove('err'); void pins.offsetWidth; pins.classList.add('err'); });
   }
   function key(k){
@@ -1845,15 +1863,24 @@ function checkSlot(s, label, bereich){
   }
   return true;
 }
+function istEingabe(el){
+  return !!(el && el.closest && el.closest('textarea,[contenteditable],input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=file])'));
+}
 function openForm(o){
   return new Promise(function(res){
     var dlg = $('#sheet');
     dlg.innerHTML = '<form method="dialog" class="sheet-form"><h3>' + esc(o.title) + '</h3>' + (o.intro ? '<p class="muted" style="margin-top:-.5rem">' + esc(o.intro) + '</p>' : '')
       + o.fields.map(fieldHtml).join('')
-      + '<div class="sheet-actions">' + (o.deletable ? '<button class="btn danger left" value="delete" formnovalidate>' + ico('trash') + 'Löschen</button>' : '')
-      + '<button class="btn" value="cancel" formnovalidate>Abbrechen</button><button class="btn primary" value="ok">' + esc(o.submit || 'Speichern') + '</button></div></form>';
+      /* „Speichern“ steht zuerst im Formular: Enter speichert. Angezeigt wird es rechts (CSS order). */
+      + '<div class="sheet-actions"><button class="btn primary" value="ok">' + esc(o.submit || 'Speichern') + '</button><button class="btn" value="cancel" formnovalidate>Abbrechen</button>'
+      + (o.deletable ? '<button class="btn danger left" value="delete" formnovalidate title="Entf">' + ico('trash') + 'Löschen</button>' : '') + '</div></form>';
     var form = dlg.querySelector('form');
     form.addEventListener('change', function(){ syncSlots(form); });
+    /* Entf löscht (nicht beim Schreiben in einem Feld) */
+    if(o.deletable) form.addEventListener('keydown', function(e){
+      if(e.key !== 'Delete' || e.ctrlKey || e.altKey || e.metaKey || istEingabe(e.target)) return;
+      e.preventDefault(); var b = form.querySelector('button[value=delete]'); if(b) b.click();
+    });
     syncSlots(form);
     if(o.wire) o.wire(form);
     dlg.addEventListener('close', function(){
@@ -1902,7 +1929,14 @@ function guessTyp(name){
   if(ext === 'pdf' || ['docx','doc','odt','pages'].indexOf(ext) >= 0) return 'ab';
   return null;
 }
-function titleFromFile(name){ return String(name).replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').replace(/\s+-\s+|\s{2,}/g, ' ').trim(); }
+/* Pauls Dateinamen „P9 Stromkreis - 3 Blitz-Check - Stationskarten“ → Nummer 3, Titel „Blitz-Check - Stationskarten“
+   (Präfix bis „ - Nummer “ fällt weg; Originalname bleibt in datei.name und kommt beim Export zurück) */
+var KURZ_RE = /^(.+?)\s+-\s+(\d{1,3})(?:[\s._)]+|\s*-\s+)(.+)$/;
+function kurzName(base){
+  var b = String(base).replace(/_+/g, ' ').replace(/\s{2,}/g, ' ').trim(), m = KURZ_RE.exec(b);
+  return m ? { nr:String(+m[2]), titel:m[3].trim() } : { nr:'', titel:b };
+}
+function titleFromFile(name){ return kurzName(String(name).replace(/\.[^.]+$/, '')).titel; }
 
 function isNewM(m){ return !m || !m.id; }
 /* Material mit gleichem Dateinamen in einer Reihe (zum Ersetzen) */
@@ -2028,6 +2062,61 @@ function materialForm(loc, m, bereich, k){
     }
   });
 }
+/* ---------- Papierkorb: gelöschtes Material 30 Tage wiederherstellbar (nur Lehrkraft) ----------
+   data.papierkorb = [{ id, am, m, ort:{ f, j, r, v, vTitel, vIndex, mIndex, text } }] – Dateien bleiben liegen, bis der Eintrag endgültig gelöscht wird. */
+var KORB_TAGE = 30;
+function korb(){ if(!Array.isArray(data.papierkorb)) data.papierkorb = []; return data.papierkorb; }
+function korbAus(e){ var k = korb(), i = k.indexOf(e); if(i >= 0) k.splice(i, 1); if(!k.length) delete data.papierkorb; }
+function inKorb(f, j, r, v, m){
+  var vi = r.vorhaben.indexOf(v), mi = v.materialien.indexOf(m), e = { id:uid(), am:heute(), m:m,
+    ort:{ f:f.id, j:j.id, r:r.id, v:v.id, vTitel:v.titel, vIndex:vi, mIndex:mi, text:f.name + ' ' + jgLabel(j) + ' · ' + r.titel + ' · ' + v.titel } };
+  if(mi >= 0) v.materialien.splice(mi, 1);
+  korb().unshift(e);
+  return e;
+}
+function inKorbMitHinweis(f, j, r, v, m){
+  var e;
+  return commit('Material entfernt: ' + m.titel, function(){ e = inKorb(f, j, r, v, m); }).then(function(){
+    toast('„' + m.titel + '“ ist im Papierkorb.', { label:'Rückgängig', fn:function(){ korbZurueck(e.id); } });
+  });
+}
+/* Wieder einsetzen: gleiches Vorhaben, sonst gleichnamiges, sonst neu (für SuS ausgeblendet) */
+function wiederherstellen(e){
+  var o = e.ort, f = findIn(data.faecher, o.f), j = f && findIn(f.jahrgaenge, o.j), r = j && findIn(j.reihen, o.r);
+  if(!r) return 'Die Reihe „' + o.text.split(' · ')[1] + '“ gibt es nicht mehr.';
+  var v = findIn(r.vorhaben, o.v) || r.vorhaben.filter(function(x){ return x.titel.toLowerCase() === String(o.vTitel || '').toLowerCase(); })[0];
+  if(!v){ v = { id:findIn(r.vorhaben, o.v) ? uid() : o.v, titel:o.vTitel || 'Wiederhergestellt', notiz:'', ausgeblendet:true, materialien:[] };
+    r.vorhaben.splice(Math.max(0, Math.min(o.vIndex, r.vorhaben.length)), 0, v); }
+  var m = e.m; if(findIn(v.materialien, m.id)) m.id = uid();
+  v.materialien.splice(o.mIndex >= 0 ? Math.min(o.mIndex, v.materialien.length) : v.materialien.length, 0, m);
+  korbAus(e);
+  return '';
+}
+function korbZurueck(id){
+  var e = findIn(data.papierkorb, id); if(!e) return;
+  var o = e.ort, f = findIn(data.faecher, o.f), j = f && findIn(f.jahrgaenge, o.j);
+  if(!(j && findIn(j.reihen, o.r))){ alert('Die Reihe gibt es nicht mehr – Wiederherstellen geht nicht.'); return; }
+  commit('Wiederhergestellt: ' + e.m.titel, function(){ wiederherstellen(e); });
+  toast('„' + e.m.titel + '“ ist wieder da.');
+}
+function korbAlt(e){ return (new Date(heute() + 'T00:00:00') - new Date(e.am + 'T00:00:00')) / 864e5 >= KORB_TAGE; }
+/* Nach dem Laden (Lehrkraft): Einträge älter als 30 Tage endgültig löschen */
+function korbAufraeumen(){
+  if(!data || !canEdit() || !keyB || !Array.isArray(data.papierkorb)) return;
+  var alt = data.papierkorb.filter(korbAlt); if(!alt.length) return;
+  commit('Papierkorb: ' + alt.length + ' alte(s) Material endgültig gelöscht', function(){
+    alt.forEach(korbAus); loeschenSpaeter(filesOf(alt.map(function(e){ return e.m; })));
+  });
+}
+function korbPanel(){
+  var k = (data && data.papierkorb) || [];
+  return '<section class="panel" id="papierkorb"><h2>Papierkorb</h2>'
+    + (k.length ? '<p class="hint" style="margin:0">Wird nach ' + KORB_TAGE + ' Tagen automatisch geleert.</p><ul class="korb-list">' + k.map(function(e){
+        return '<li><span><b>' + esc(e.m.titel) + '</b><small>' + esc(e.ort.text) + ' · gelöscht ' + esc(datumKurz(e.am)) + (e.m.datei && e.m.datei.mb ? ' · ' + fmtMb(e.m.datei.mb) : '') + '</small></span>'
+          + '<button class="pillbtn" data-act="korb-zurueck" data-e="' + esc(e.id) + '">' + ico('back') + 'Wiederherstellen</button></li>'; }).join('')
+      + '</ul><div class="btnline" style="margin-top:.8rem"><button class="btn danger" data-act="korb-leeren">' + ico('trash') + 'Papierkorb leeren</button></div>'
+      : '<p class="muted" style="margin:0">Leer.</p>') + '</section>';
+}
 function saveMaterial(loc, existing, bereich){
   return ensureFresh().then(function(){
     var cur = null;
@@ -2035,11 +2124,7 @@ function saveMaterial(loc, existing, bereich){
     if(existing){ cur = ctx({ dataset:{ f:existing.f.id, j:existing.j.id, r:existing.r.id, v:existing.v.id, m:existing.m.id, k:existing.k ? existing.k.id : '' } }); if(!cur.m) throw new Error('Material nicht mehr vorhanden.'); }
     return materialForm(loc, cur && cur.m, bereich, cur && cur.k).then(function(v){
       if(!v) return;
-      if(v._delete){
-        if(!confirm('„' + cur.m.titel + '“ entfernen?')) return;
-        var files = filesOf(cur.m), rm = askDelete(files);
-        return commit('Material entfernt', function(){ cur.v.materialien.splice(cur.v.materialien.indexOf(cur.m), 1); if(rm) loeschenSpaeter(files); });
-      }
+      if(v._delete) return inKorbMitHinweis(cur.f, cur.j, cur.r, cur.v, cur.m);
       var o = v.o, f = findIn(data.faecher, o.f), j = f && findIn(f.jahrgaenge, o.j);
       if(!cur && v.ersetzen && j) return ersetzeDatei(f, j, findIn(j.reihen, o.r), v.ersetzen, v.datei.file);
       if(!j){ alert('Bitte Fach und Jahrgang wählen. Jahrgänge legst du auf der Startseite an.'); return; }
@@ -2369,13 +2454,23 @@ var actions = {
     });
   }),
   'del-v': needAdmin(function(c){
-    if(!confirm('„' + c.v.titel + '“ mit allen Materialien löschen?')) return;
-    var files = filesOf(c.v), rm = askDelete(files);
-    commit('Vorhaben gelöscht', function(){ c.r.vorhaben.splice(c.r.vorhaben.indexOf(c.v), 1); if(rm) loeschenSpaeter(files); });
+    var n = (c.v.materialien || []).filter(function(m){ return m.typ !== 'tag'; }).length;
+    if(!confirm('„' + c.v.titel + '“ löschen?' + (n ? ' Das Material kommt in den Papierkorb.' : ''))) return;
+    commit('Vorhaben gelöscht', function(){
+      (c.v.materialien || []).slice().reverse().forEach(function(m){ if(m.typ !== 'tag') inKorb(c.f, c.j, c.r, c.v, m); });
+      c.r.vorhaben.splice(c.r.vorhaben.indexOf(c.v), 1);
+    });
+    toast('„' + c.v.titel + '“ gelöscht' + (n ? ', Material im Papierkorb.' : '.'));
   }),
   'up-v': needAdmin(function(c){ if(move(c.r.vorhaben, c.v, -1)) commit('Reihenfolge'); }),
   'down-v': needAdmin(function(c){ if(move(c.r.vorhaben, c.v, 1)) commit('Reihenfolge'); }),
 
+  'korb-zurueck': function(c){ var id = c._el.dataset.e; ensureFresh().then(function(){ korbZurueck(id); }).catch(fail); },
+  'korb-leeren': needAdmin(function(){
+    var k = data.papierkorb || []; if(!k.length) return;
+    if(!confirm('Papierkorb endgültig leeren? ' + k.length + ' Material' + (k.length === 1 ? '' : 'ien') + ' werden gelöscht.')) return;
+    commit('Papierkorb geleert', function(){ var files = filesOf(data.papierkorb); delete data.papierkorb; loeschenSpaeter(files); });
+  }),
   'add-m': function(c){ saveMaterial({ f:c.f.id, j:c.j.id, r:c.r.id, v:c.v.id }, null, c._el.dataset.bereich || 'sus'); },
   'edit-m': function(c){ saveMaterial({ f:c.f.id, j:c.j.id, r:c.r.id, v:c.v.id }, c); },
   /* Trenner für mehrere Tage: wird hinten angefügt, Beschriftung „Tag 2“, „Tag 3“ … */
@@ -2999,7 +3094,10 @@ function openSync(list, opt){
   chain.then(function(){ return ensureFresh(); }).then(function(){
     busy(false);
     var st = { items:list, opt:opt, schema:(opt.fixed && opt.fixed.v) ? 'eins' : ((loadJSON(SYNC_KEY) || {}).schema || 'nummer') };
-    buildGroups(st); showSync(st);
+    buildGroups(st);
+    /* Direkt (Einfügen über einem Vorhaben): nur wenn alles neu und eindeutig ist, sonst das Fenster zum Zuordnen */
+    if(opt.direkt && st.groups.length === 1 && st.groups[0].rows.every(function(row){ return rowStatus(st.groups[0], row) === 'neu'; })) return runSync(st);
+    showSync(st);
   }).catch(fail);
 }
 function buildGroups(st){
@@ -3015,6 +3113,7 @@ function buildGroups(st){
     if(rFolder && base.toLowerCase().indexOf(rFolder.toLowerCase()) === 0) pre = base.slice(rFolder.length);
     pre = pre.replace(/^[\s_-]+/, '');
     var nm = /^(\d{1,3})(?:[\s._)-]+)(.+)$/.exec(pre), nr = nm ? String(+nm[1]) : '', rest = nm ? nm[2] : pre;
+    if(!nm){ var kn = kurzName(pre); if(kn.nr){ nr = kn.nr; rest = kn.titel; } }
     var vkey = st.schema === 'nummer' ? 'nr:' + nr : (st.schema === 'ordner' ? 'dir:' + vFolder : '*');
     var row = { it:it, name:name, ext:ext, titel:cleanTitle(rest) || base, vkey:vkey,
       quelle:(rFolder ? rFolder + '/' : '') + (vFolder ? vFolder + '/' : '') + name };
@@ -3095,6 +3194,26 @@ function findQuelle(r, row){
   if(!hit){ var g = gleicheDatei(r, row.name); if(g) hit = g.m; }   // gleicher Dateiname (auch aus anderem Ordner/Weg hochgeladen)
   return hit ? { m:hit, exact:!!hit.hash } : null;
 }
+/* Ziel einer einzelnen Datei: „v:ID“ = vorhandenes Vorhaben, „g:KEY“ = neues Vorhaben dieser Gruppe.
+   Ohne eigene Wahl gilt die Zuordnung der Gruppe (Nummer, Unterordner …). */
+function rowZiel(st, g, row){
+  var r = curReihe(g);
+  if(row.ziel){
+    if(/^v:/.test(row.ziel) && r && findIn(r.vorhaben, row.ziel.slice(2))) return row.ziel;
+    if(/^g:/.test(row.ziel) && g.vmap[row.ziel.slice(2)]) return row.ziel;
+  }
+  var tg = vTarget(st, g, g.vmap[row.vkey]);
+  return tg === '__neu' ? 'g:' + row.vkey : 'v:' + tg;
+}
+function zielSelect(st, g, row, ra){
+  var r = curReihe(g), cur = rowZiel(st, g, row), opts = '';
+  (r ? r.vorhaben : []).forEach(function(x, i){ opts += '<option value="v:' + esc(x.id) + '"' + ('v:' + x.id === cur ? ' selected' : '') + '>' + (i + 1) + '. ' + esc(x.titel) + '</option>'; });
+  g.vorder.forEach(function(k){
+    var vm = g.vmap[k]; if(vTarget(st, g, vm) !== '__neu') return;
+    opts += '<option value="g:' + esc(k) + '"' + ('g:' + k === cur ? ' selected' : '') + '>＋ ' + esc(String(vm.titel || '').trim() || 'Neues Vorhaben') + '</option>';
+  });
+  return '<select data-k="ziel"' + ra + ' aria-label="Unterrichtsvorhaben">' + opts + '</select>';
+}
 function rowStatus(g, row){
   if(row.blocked) return 'gesperrt';
   var f = findQuelle(curReihe(g), row);
@@ -3132,11 +3251,11 @@ function syncHtml(st){
           + '<option value="__neu"' + (tg === '__neu' ? ' selected' : '') + '>＋ Neues Vorhaben</option></select></td>'
           + '<td>' + (tg === '__neu' ? '<input type="text" data-k="vtitel"' + va + ' value="' + esc(vm.titel) + '">' : '') + '</td></tr>';
       }).join('') + '</tbody></table></div>';
-    h += '<div class="tbl-wrap"><table class="sync"><thead><tr><th></th><th>Datei</th><th>Nr.</th><th>Art</th><th>Titel</th><th>Bereich</th><th>Status</th></tr></thead><tbody>'
+    h += '<div class="tbl-wrap"><table class="sync"><thead><tr><th></th><th>Datei</th><th>Unterrichtsvorhaben</th><th>Art</th><th>Titel</th><th>Bereich</th><th>Status</th></tr></thead><tbody>'
       + g.rows.map(function(row, ri){
         var s = rowStatus(g, row), on = rowOn(g, row), ra = ga + ' data-row="' + ri + '"';
         return '<tr class="' + (on ? '' : 'off') + '"><td><input type="checkbox" data-k="sel"' + ra + (on ? ' checked' : '') + (row.blocked ? ' disabled' : '') + ' aria-label="Hochladen"></td>'
-          + '<td class="fname">' + esc(row.name) + '</td><td>' + esc(g.vmap[row.vkey].short) + '</td>'
+          + '<td class="fname">' + esc(row.name) + '</td><td>' + zielSelect(st, g, row, ra) + '</td>'
           + '<td><select data-k="typ"' + ra + '>' + TYPES.filter(function(t){ return t[0] !== 'buch'; }).map(function(t){ return '<option value="' + t[0] + '"' + (t[0] === row.typ ? ' selected' : '') + '>' + esc(t[1]) + '</option>'; }).join('') + '</select></td>'
           + '<td><input type="text" data-k="titel"' + ra + ' value="' + esc(row.titel) + '"></td>'
           + '<td><select data-k="bereich"' + ra + '><option value="sus"' + (row.bereich === 'sus' ? ' selected' : '') + (row.typ === 'pruefung' ? ' disabled' : '') + '>SuS</option>'
@@ -3148,9 +3267,10 @@ function syncHtml(st){
 }
 function showSync(st){
   var v = document.createElement('div');
-  v.className = 'viewer';
-  v.innerHTML = '<div class="viewer-bar"><button class="iconbtn" data-s="close" aria-label="Abbrechen">' + ico('close') + '</button><b>Hochladen und zuordnen</b>'
-    + '<button class="pillbtn dark" data-s="go"></button></div><div class="sync-body"></div>';
+  v.className = 'viewer sync-modal';
+  v.setAttribute('role', 'dialog'); v.setAttribute('aria-modal', 'true');
+  v.innerHTML = '<div class="sync-panel"><div class="viewer-bar"><button class="iconbtn" data-s="close" aria-label="Abbrechen">' + ico('close') + '</button><b>Hochladen und zuordnen</b>'
+    + '<button class="pillbtn dark" data-s="go"></button></div><div class="sync-body"></div></div>';
   document.body.appendChild(v); document.body.style.overflow = 'hidden';
   history.pushState({ viewer:true }, '');
   viewerState = { el:v, url:null, closed:false };
@@ -3176,13 +3296,14 @@ function showSync(st){
       case 'rtitel': g.reiheTitel = t.value; break;
       case 'vt': vm.target = t.value; paint(); break;
       case 'vtitel': vm.titel = t.value; break;
+      case 'ziel': row.ziel = t.value; break;
       case 'sel': row.sel = t.checked; t.closest('tr').className = t.checked ? '' : 'off'; count(); break;
       case 'typ': row.typ = t.value; if(t.value === 'pruefung') row.bereich = 'lk'; paint(); break;
       case 'titel': row.titel = t.value; break;
       case 'bereich': row.bereich = t.value; break;
     }
   }
-  function resetSel(g){ g.rows.forEach(function(row){ row.sel = undefined; }); }
+  function resetSel(g){ g.rows.forEach(function(row){ row.sel = undefined; row.ziel = undefined; }); }
   v.addEventListener('change', function(e){ if(e.target.type !== 'text') onEdit(e, false); });
   v.addEventListener('input', function(e){ if(e.target.type === 'text') onEdit(e, true); });
 }
@@ -3222,8 +3343,12 @@ function runSync(st){
           var dir = dirFor(f, j, r), vcache = {}, tg = {};
           // Ziel-Vorhaben vor dem Anlegen neuer Vorhaben festlegen
           g.vorder.forEach(function(k){ g.reiheId = r.id; g.jgId = j.id; tg[k] = vTarget(st, g, g.vmap[k]); });
+          var rz = {};
+          t.rows.forEach(function(row){ rz[row.name + '|' + row.quelle] = rowZiel(st, g, row); });
           function vh(row){
-            var vm = g.vmap[row.vkey]; if(vcache[vm.key]) return vcache[vm.key];
+            var z = rz[row.name + '|' + row.quelle] || '';
+            if(/^v:/.test(z)){ var ex = findIn(r.vorhaben, z.slice(2)); if(ex) return ex; }
+            var vm = g.vmap[/^g:/.test(z) ? z.slice(2) : row.vkey]; if(vcache[vm.key]) return vcache[vm.key];
             var v = tg[vm.key] !== '__neu' ? findIn(r.vorhaben, tg[vm.key]) : null;
             if(!v){ v = { id:uid(), titel:String(vm.titel || '').trim() || 'Material', notiz:'', ausgeblendet:false, materialien:[] }; if(vm.key !== '*' && vm.key !== 'nr:') v.quelle = vm.key; r.vorhaben.push(v); }
             else if(!v.quelle && vm.key !== '*' && vm.key !== 'nr:') v.quelle = vm.key;
@@ -3294,6 +3419,88 @@ document.addEventListener('drop', function(e){
   else if(p[0] === 'f' && p[3]) fixed = { f:p[1], j:p[2], r:p[3] };
   else if(p[0] === 'f' && p[2]) fixed = { f:p[1], j:p[2] };
   gatherDrop(e.dataTransfer).then(function(list){ return ensureFresh().then(function(){ openSync(list, { fixed:fixed }); }); }).catch(fail);
+});
+
+/* =====================================================================
+   Einfügen aus der Zwischenablage (Strg+V, Laptop)
+     - offener Dialog mit Datei-Feld: Datei(en) kommen ins Feld
+     - Dateien/Screenshots: Maus über einem Vorhaben → direkt dorthin, sonst Fenster zum Zuordnen
+     - Text: wird zur Notiz eines Vorhabens (Notizen-Dialog zum Bestätigen)
+   ===================================================================== */
+var zeigerEl = null;
+document.addEventListener('mousemove', function(e){ zeigerEl = e.target; }, { passive:true });
+function stempel(){ var d = new Date(); return heute() + ' ' + pad2(d.getHours()) + '-' + pad2(d.getMinutes()) + '-' + pad2(d.getSeconds()); }
+/* Screenshots heißen im Browser meist „image.png“ → sprechender Name */
+function benenne(files){
+  return files.map(function(f, i){
+    if(f.name && !/^(image|bild)\.(png|jpe?g|gif|webp|bmp)$/i.test(f.name)) return f;
+    var ext = (/\/(png|jpeg|gif|webp|bmp)$/.exec(f.type || '') || [, 'png'])[1].replace('jpeg', 'jpg');
+    return new File([f], 'Screenshot ' + stempel() + (files.length > 1 ? ' (' + (i + 1) + ')' : '') + '.' + ext, { type:f.type || 'image/png' });
+  });
+}
+function dateienAus(cd){
+  var out = Array.prototype.slice.call((cd && cd.files) || []);
+  if(!out.length) Array.prototype.forEach.call((cd && cd.items) || [], function(it){ if(it.kind === 'file'){ var f = it.getAsFile(); if(f) out.push(f); } });
+  return benenne(out);
+}
+/* Datei(en) in das passende Feld eines offenen Dialogs legen */
+function inDialogFeld(dlg, files){
+  var akt = document.activeElement, fs = akt && akt.closest && akt.closest('fieldset.slot');
+  var inp = (fs && fs.querySelector('input[type=file]')) || Array.prototype.filter.call(dlg.querySelectorAll('input[type=file]'), function(x){
+    var f = x.closest('fieldset.slot'); if(!f) return true;
+    var mode = (f.querySelector('input[type=radio]:checked') || {}).value; return mode === 'file';
+  })[0] || dlg.querySelector('input[type=file]');
+  if(!inp) return false;
+  var acc = String(inp.getAttribute('accept') || ''), passend = files.filter(function(f){
+    if(!acc) return true;
+    return acc.split(',').some(function(a){ a = a.trim().toLowerCase(); return a === 'image/*' ? isImageFile(f) : (a[0] === '.' ? extOf(f.name) === a.slice(1) : f.type === a); });
+  });
+  if(!passend.length){ toast('Diese Datei passt hier nicht.'); return true; }
+  var slot = inp.closest('fieldset.slot');
+  if(slot){ var rb = slot.querySelector('input[type=radio][value=file]'); if(rb){ rb.checked = true; syncSlots(slot.closest('form')); } }
+  var dt = new DataTransfer(); (inp.multiple ? passend : passend.slice(0, 1)).forEach(function(f){ dt.items.add(f); });
+  inp.files = dt.files; inp.dispatchEvent(new Event('change', { bubbles:true }));
+  toast(passend.length === 1 ? '„' + passend[0].name + '“ eingefügt.' : passend.length + ' Dateien eingefügt.');
+  return true;
+}
+/* Text als Notiz: Vorhaben und Feld wählen, Text steht schon drin */
+function textAlsNotiz(text, c){
+  var p = hashParts(), f = c && c.f, j = c && c.j, r = c && c.r;
+  if(!r && p[0] === 'f' && p[3]){ f = findIn(data.faecher, p[1]); j = f && findIn(f.jahrgaenge, p[2]); r = j && findIn(j.reihen, p[3]); }
+  if(!r){ toast('Zum Einfügen von Text zuerst eine Reihe öffnen.'); return; }
+  if(!(r.vorhaben || []).length){ toast('In dieser Reihe gibt es noch kein Unterrichtsvorhaben.'); return; }
+  var v0 = (c && c.v) || r.vorhaben[0];
+  openForm({ title:'Text als Notiz einfügen', submit:'Einfügen', noFocus:true, fields:[
+    { name:'v', label:'Unterrichtsvorhaben', type:'select', value:v0.id, options:r.vorhaben.map(function(v, i){ return [v.id, (i + 1) + '. ' + v.titel]; }) },
+    { name:'feld', label:'Als', type:'select', value:'verlauf', options:PLANUNG },
+    { name:'text', label:'Text', type:'textarea', value:text }
+  ]}).then(function(o){
+    if(!o || !o.text) return;
+    var v = findIn(r.vorhaben, o.v); if(!v) return;
+    commit('Notiz: ' + v.titel, function(){
+      var pl = planungOf(v) || {}, alt = pl[o.feld] || '';
+      pl[o.feld] = alt ? alt + '\n' + o.text : o.text; v.planung = planungOf({ planung:pl });
+      delete lkOpen[v.id]; saveJSON(LK_KEY, lkOpen);
+    });
+  });
+}
+document.addEventListener('paste', function(e){
+  if(!(canEdit() && keyB && data) || document.body.classList.contains('kurs')) return;
+  var cd = e.clipboardData, files = dateienAus(cd), text = cd ? String(cd.getData('text/plain') || '').trim() : '';
+  var dlg = $('#sheet');
+  if(dlg && dlg.open){ if(files.length && inDialogFeld(dlg, files)) e.preventDefault(); return; }
+  if(viewerState) return;
+  if(!files.length && (!text || istEingabe(e.target))) return;
+  if(istEingabe(e.target) && !files.length) return;
+  e.preventDefault();
+  var row = zeigerEl && document.contains(zeigerEl) && zeigerEl.closest ? zeigerEl.closest('.row[data-v]') : null, c = row ? ctx(row) : null, p = hashParts();
+  if(!files.length){ textAlsNotiz(text, c && c.v ? c : null); return; }
+  var fixed = {};
+  if(c && c.v) fixed = { f:c.f.id, j:c.j.id, r:c.r.id, v:c.v.id };
+  else if(p[0] === 'f' && p[3]) fixed = { f:p[1], j:p[2], r:p[3] };
+  else if(p[0] === 'f' && p[2]) fixed = { f:p[1], j:p[2] };
+  var lk = !!(zeigerEl && zeigerEl.closest && zeigerEl.closest('.lk-area,.lkbox,[data-bereich=lk]'));
+  ensureFresh().then(function(){ openSync(files.map(function(f){ return { path:f.name, file:f }; }), { fixed:fixed, direkt:!!fixed.v, bereich:lk ? 'lk' : null }); }).catch(fail);
 });
 
 /* =====================================================================
@@ -3532,7 +3739,16 @@ function zipBlob(files){
 }
 function safeName(s){ return String(s).replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 80) || 'Datei'; }
 function pad2(n){ return (n < 10 ? '0' : '') + n; }
+/* Dateiname im Export: Originalname (z. B. „P9 Stromkreis - 3 Blitz-Check - Stationskarten.pdf“), sonst Titel */
+function origName(m, sfx){
+  var F = m.datei, n = (F && F.name) || (m.quelle ? String(m.quelle).split('/').pop() : ''), ext = (F && F.ext) || extOf(n);
+  var base = n ? n.replace(/\.[^.]+$/, '') : '';
+  if(!base || /^(image|bild|screenshot)$/i.test(base)) base = m.titel + (sfx || '');
+  return safeName(base) + (ext ? '.' + ext : '');
+}
 function exportZip(onlyF, onlyJ){
+  var seenP = {};
+  function uniqPath(p){ var q = p, n = 2; while(seenP[q.toLowerCase()]) q = p.replace(/(\.[^.\/]+)?$/, ' (' + (n++) + ')$1'); seenP[q.toLowerCase()] = 1; return q; }
   var jobs = [], links = [], plan = { format:'unterrichtsmaterial-import', version:2, titel:data.titel || '', schulform:data.schulform || 'ge', faecher:[], eintraege:[] };
   var html = '<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Übersicht</title>'
     + '<style>body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;max-width:860px;margin:2rem auto;padding:0 1rem;line-height:1.5;color:#1B2333}h1,h2,h3{font-family:Georgia,serif}h3{margin-bottom:.2rem}li{margin:.2rem 0}small{color:#5E6A7C}</style></head><body>'
@@ -3580,7 +3796,7 @@ function exportZip(onlyF, onlyJ){
             var st = niveauOf(m) ? ' ' + sterne(niveauOf(m)) : '';
             if(m.typ === 'tag'){ pv.materialien.push(pm); items.push('\n' + esc(m.titel)); return; }
             if(m.datei){
-              var path = vdir + '/' + safeName(m.titel) + sfx + '.' + m.datei.ext;
+              var path = uniqPath(vdir + '/' + origName(m, sfx));
               if(job(m.datei, path, pm, 'datei')){ any = true; items.push('<a href="' + encodeURI(path) + '">' + esc(m.titel) + sfx + '</a>' + st + ' <small>' + esc((m.datei.ext || '').toUpperCase()) + '</small>'); }
             }
             if(m.typ === 'buch'){ if(m.text) pm.text = m.text; any = true; items.push('📖 ' + esc(m.titel) + sfx + st + (m.text ? ' <small>– ' + fmt(m.text) + '</small>' : '')); }
@@ -3722,7 +3938,7 @@ function boot(){
     if(!z){ render(); return; }
     var stored = loadJSON(KEK_KEY);
     if(!stored){ render(); return; }
-    return unlockBasis(b64ToBytes(stored)).then(function(){ return loadAktuell(); }).then(render, function(){
+    return unlockBasis(b64ToBytes(stored)).then(function(){ return loadAktuell(); }).then(function(){ render(); korbAufraeumen(); }, function(){
       try{ localStorage.removeItem(KEK_KEY); }catch(e){}
       keyB = null; render();
     });

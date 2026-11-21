@@ -2,7 +2,7 @@
    Immer zuerst das Netz (damit Änderungen sofort ankommen),
    ohne Verbindung den zuletzt gespeicherten Stand zeigen.
    Gespeichert werden nur die verschlüsselten Dateien. */
-const CACHE = 'material-v18';
+const CACHE = 'material-v19';
 const SHELL = ['./', './index.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 
