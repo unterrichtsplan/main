@@ -123,10 +123,28 @@ Materialsammlung als Web-App (GitHub Pages). Schülerinnen, Schüler und Lehrkr�
   - **Fach und Jahrgang** aus Ordnernamen wie „2526 M 6“, „M 6 Brüche“ oder „Ph Q2“ (M/Ma/Mathe, P/Ph/Physik, NW; 5–10, EF, Q1, Q2). Für NW muss das Fach vorher angelegt sein.
   - **Reihe** = Ordner, in dem die Dateien liegen („M 6 Brüche“ → Reihe „Brüche“).
   - **Unterrichtsvorhaben** = Nummer am Anfang des Dateinamens (einstellbar: Unterordner oder alles in ein Vorhaben).
-  - **Art** aus Dateiname und Endung („Lösung“, „Klausur/Test/KA“, `.html`, `.pptx` …), **Titel** aus dem Dateinamen.
+  - **Kurzer Titel:** „P9 Stromkreis - 3 Blitz-Check - Stationskarten.pdf“ → Vorhaben 3, Titel „Blitz-Check - Stationskarten“. Der Originalname bleibt gespeichert und steht beim Export („Alles herunterladen“) wieder im Dateinamen.
+  - **Art** aus Dateiname und Endung („Lösung“, „Klausur/Test/KA“, `.html`, `.pptx` …).
   - **PDF und Word/PowerPoint mit gleichem Namen**: PDF für SuS, Original im Lehrkraft-Bereich. Word/PowerPoint ohne PDF landet im Lehrkraft-Bereich.
   - Ignoriert werden versteckte Dateien und Word-Sperrdateien (`~$…`). Videos werden nicht hochgeladen. `.url`-Verknüpfungen werden zu Links.
-- **Vorschau** vor dem Hochladen: Ziel (Fach, Jahrgang, Reihe, Vorhaben), Art, Titel und Bereich pro Datei prüfen und ändern; Dateien abwählen.
+- **Vorschau** als Fenster vor der Seite: Ziel (Fach, Jahrgang, Reihe), **Unterrichtsvorhaben pro Datei**, Art, Titel und Bereich prüfen und ändern; Dateien abwählen.
+
+## Einfügen mit Strg+V (Laptop)
+
+- **Dateien aus dem Explorer oder Screenshots** kopieren und in der App einfügen:
+  - Maus über einem Unterrichtsvorhaben → die Datei kommt direkt dorthin (über dem Lehrkraft-Bereich: als Lehrkraft-Material). Gibt es die Datei schon, öffnet sich das Fenster zum Zuordnen.
+  - Sonst öffnet sich das Fenster zum Zuordnen.
+  - In einem offenen Dialog (z. B. Material, Titelbild) füllt Strg+V das Datei-Feld.
+- **Text** wird zur Notiz: Vorhaben und Feld (Schwerpunktziel, Verlaufsplan, Reflexion) wählen, Text steht schon drin.
+- Screenshots heißen „Screenshot JJJJ-MM-TT hh-mm-ss.png“.
+- Material-Dialog: **Enter** speichert, **Entf** löscht (nicht beim Schreiben in einem Feld).
+
+## Papierkorb
+
+- Gelöschtes Material kommt in den Papierkorb (**Einstellungen → Speicher**). Direkt nach dem Löschen: „Rückgängig“ im Hinweis unten.
+- Wiederherstellen setzt es an die alte Stelle. Gibt es das Vorhaben nicht mehr, wird es neu angelegt (für SuS ausgeblendet).
+- Nach 30 Tagen wird es endgültig gelöscht (beim nächsten Öffnen durch die Lehrkraft), oder vorher über „Papierkorb leeren“.
+- Ein gelöschtes Vorhaben legt sein Material ebenfalls in den Papierkorb. Reihen, Jahrgänge und Fächer werden weiter direkt gelöscht (mit Rückfrage).
 - **Erneut ausführen = Abgleich**: Unveränderte Dateien werden übersprungen, geänderte ersetzt (erkannt am Ordner oder am gleichen Dateinamen; Titel und Einstellungen bleiben). Auf dem Laptop gelöschte Dateien bleiben in der Sammlung.
 - Das passt zur Arbeitsweise: Am Laptop liegt die vollständige Sicherung aller Jahre, in der Sammlung nur, was für den aktuellen Durchgang gebraucht wird.
 

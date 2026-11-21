@@ -1006,8 +1006,9 @@ with sync_playwright() as p:
     page.wait_for_function("() => !document.querySelector('.rows').innerText.includes('Lösungsblatt später')", timeout=5000)
     check('Löschen: Eintrag sofort weg', True)
     wait_saved(); time.sleep(0.5)
-    check('Löschen: Datei im Hintergrund entfernt', weg['datei']['pfad'] not in repo)
     stale = None
+    d_k = getd()
+    check('Löschen: in den Papierkorb, Datei bleibt', weg['datei']['pfad'] in repo and any(e['m']['id'] == weg['id'] for e in d_k.get('papierkorb', [])))
     page.locator('.row').nth(0).locator('[data-act=edit-v]').click(); page.wait_for_selector('dialog#sheet[open] input[name=titel]')
     page.fill('dialog#sheet input[name=titel]', alt_titel); page.click('dialog#sheet button[value=ok]'); wait_saved()
     edit_off()
@@ -1069,6 +1070,107 @@ with sync_playwright() as p:
     check('AO: Link öffnet in neuem Tab, alte Datei gelöscht', a_.count() == 1 and a_.get_attribute('href') == 'https://example.org/ao' and a_.get_attribute('target') == '_blank' and alt_ao not in repo)
     page.goto(SITE + '#/f/physik/8/optische-instrumente'); page.wait_for_selector('.rows'); time.sleep(0.3)
 
+    # ================= Einfügen, Kurztitel, Enter/Entf, Papierkorb, Import-Fenster =================
+    PASTE_JS = """(a) => { const dt = new DataTransfer();
+      for (const f of (a.files || [])) dt.items.add(new File([f.c], f.n, { type: f.t || '' }));
+      if (a.text) dt.setData('text/plain', a.text);
+      (document.activeElement && document.activeElement !== document.body ? document.activeElement : document.body)
+        .dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true })); }"""
+    def paste(files=None, text=None): page.evaluate(PASTE_JS, {'files': files or [], 'text': text})
+    def mats_of(d, vi): return reihe_of(d)['vorhaben'][vi]['materialien']
+    page.goto(SITE + '#/f/physik/8/optische-instrumente'); page.wait_for_selector('.rows'); edit_on(); time.sleep(0.3)
+    # Kurztitel aus Pauls Dateinamen
+    open(FILES + '/P9 Stromkreis - 3 Blitz-Check - Stationskarten.pdf', 'wb').write(b'%PDF-BLITZ')
+    page.locator('.row').nth(1).locator('[data-act=add-m][data-bereich=sus]').click(); page.wait_for_selector('dialog#sheet[open]')
+    page.set_input_files('input[name=datei__file]', FILES + '/P9 Stromkreis - 3 Blitz-Check - Stationskarten.pdf')
+    check('Kurztitel: „Blitz-Check - Stationskarten“', page.input_value('dialog#sheet input[name=titel]') == 'Blitz-Check - Stationskarten', page.input_value('dialog#sheet input[name=titel]'))
+    n_d = len(dialogs)
+    page.focus('dialog#sheet input[name=titel]'); page.keyboard.press('Enter'); wait_saved()
+    bl = [m for m in mats_of(getd(), 1) if m['titel'] == 'Blitz-Check - Stationskarten']
+    check('Enter im neuen Material speichert', len(bl) == 1 and bl[0]['datei']['name'] == 'P9 Stromkreis - 3 Blitz-Check - Stationskarten.pdf', [m['titel'] for m in mats_of(getd(), 1)])
+    # Enter beim Bearbeiten: speichern statt löschen
+    page.locator('.row').nth(1).locator('.chip', has_text='Blitz-Check').first.click(); page.wait_for_selector('dialog#sheet[open] button[value=delete]')
+    page.fill('dialog#sheet input[name=titel]', 'Blitz-Check - Stationen'); page.focus('dialog#sheet input[name=titel]'); page.keyboard.press('Enter'); wait_saved()
+    bl = [m for m in mats_of(getd(), 1) if m['titel'].startswith('Blitz-Check')]
+    check('Enter beim Bearbeiten speichert (nicht löschen)', len(bl) == 1 and bl[0]['titel'] == 'Blitz-Check - Stationen' and len(dialogs) == n_d, [m['titel'] for m in bl] + dialogs[n_d:])
+    bid = bl[0]['id']; pos = [m['id'] for m in mats_of(getd(), 1)].index(bid)
+    # Entf löscht → Papierkorb, ein Hinweis mit „Rückgängig“, keine Rückfragen
+    page.locator('.row').nth(1).locator('.chip', has_text='Blitz-Check').first.click(); page.wait_for_selector('dialog#sheet[open] button[value=delete]')
+    page.locator('dialog#sheet select').first.focus(); page.keyboard.press('Delete')
+    page.wait_for_selector('#toast.on .toast-btn', timeout=5000)
+    check('Entf löscht ohne Rückfrage, Hinweis mit „Rückgängig“', len(dialogs) == n_d and 'Papierkorb' in page.inner_text('#toast') and not page.locator('.row').nth(1).locator('.chip', has_text='Blitz-Check').count(), dialogs[n_d:])
+    page.wait_for_selector('#saving:not(.on)', state='attached', timeout=30000); time.sleep(0.3)
+    dk = getd(); ek = [e for e in dk.get('papierkorb', []) if e['m']['id'] == bid]
+    check('Papierkorb: Eintrag mit Ort, Datei bleibt', len(ek) == 1 and ek[0]['m']['datei']['pfad'] in repo and 'Sehhilfen' in ek[0]['ort']['text'], dk.get('papierkorb'))
+    page.click('#toast .toast-btn'); time.sleep(0.4); page.wait_for_selector('#saving:not(.on)', state='attached', timeout=30000); time.sleep(0.3)
+    dk = getd()
+    check('Rückgängig: wieder an derselben Stelle', [m['id'] for m in mats_of(dk, 1)].index(bid) == pos and not any(e['m']['id'] == bid for e in dk.get('papierkorb', [])))
+    # Papierkorb in den Einstellungen: wiederherstellen
+    page.locator('.row').nth(1).locator('.chip', has_text='Blitz-Check').first.click(); page.wait_for_selector('dialog#sheet[open] button[value=delete]')
+    page.click('dialog#sheet button[value=delete]'); time.sleep(0.4); page.wait_for_selector('#saving:not(.on)', state='attached', timeout=30000)
+    page.goto(SITE + '#/einstellungen/speicher'); page.wait_for_selector('#papierkorb')
+    check('Papierkorb in Einstellungen → Speicher', 'Blitz-Check - Stationen' in page.inner_text('#papierkorb') and 'Papierkorb leeren' in page.inner_text('#papierkorb'))
+    shot('21-papierkorb')
+    page.locator('#papierkorb li', has_text='Blitz-Check').locator('[data-act=korb-zurueck]').click(); time.sleep(0.4); page.wait_for_selector('#saving:not(.on)', state='attached', timeout=30000); time.sleep(0.3)
+    check('Papierkorb: Wiederherstellen', any(m['id'] == bid for m in mats_of(getd(), 1)))
+    # Vorhaben löschen → Material in den Papierkorb, wiederherstellen legt das Vorhaben neu an (ausgeblendet)
+    page.goto(SITE + '#/f/physik/8/optische-instrumente'); page.wait_for_selector('.rows'); edit_on(); time.sleep(0.3)
+    page.locator('.row').nth(1).locator('.chip', has_text='Blitz-Check').first.click(); page.wait_for_selector('dialog#sheet[open] button[value=delete]')
+    page.click('dialog#sheet button[value=delete]'); time.sleep(0.4); page.wait_for_selector('#saving:not(.on)', state='attached', timeout=30000); time.sleep(0.3)
+    pf = next(e for e in getd()['papierkorb'] if e['m']['id'] == bid)['m']['datei']['pfad']
+    # Leeren: Datei endgültig weg
+    page.goto(SITE + '#/einstellungen/speicher'); page.wait_for_selector('#papierkorb [data-act=korb-leeren]')
+    page.click('[data-act=korb-leeren]'); wait_saved(); time.sleep(0.8)
+    check('Papierkorb leeren: Einträge und Dateien weg', not getd().get('papierkorb') and pf not in repo and 'Leer' in page.inner_text('#papierkorb'))
+    # Automatisch nach 30 Tagen
+    page.goto(SITE + '#/f/physik/8/optische-instrumente'); page.wait_for_selector('.rows'); edit_on(); time.sleep(0.3)
+    page.locator('.row').nth(0).locator('[data-act=add-m][data-bereich=sus]').click(); page.wait_for_selector('dialog#sheet[open]')
+    open(FILES + '/Alt.pdf', 'wb').write(b'%PDF-ALT'); page.set_input_files('input[name=datei__file]', FILES + '/Alt.pdf')
+    page.click('dialog#sheet button[value=ok]'); wait_saved()
+    page.locator('.row').nth(0).locator('.chip', has_text='Alt').first.click(); page.wait_for_selector('dialog#sheet[open] button[value=delete]')
+    page.click('dialog#sheet button[value=delete]'); time.sleep(0.4); page.wait_for_selector('#saving:not(.on)', state='attached', timeout=30000); time.sleep(0.3)
+    alt_pf = getd()['papierkorb'][0]['m']['datei']['pfad']
+    page.evaluate("async () => { const K = await T.keys('1234','pruefung123'); const d = await T.getData(K); d.papierkorb[0].am = '2020-01-01'; await T.putData(K, d); }")
+    page.reload(); page.wait_for_selector('.rows'); time.sleep(1.5); page.wait_for_selector('#saving:not(.on)', state='attached', timeout=30000); time.sleep(1)
+    check('Papierkorb: nach 30 Tagen automatisch gelöscht', not getd().get('papierkorb') and alt_pf not in repo, getd().get('papierkorb'))
+    # Text einfügen über einem Vorhaben → Notiz
+    edit_off(); page.hover('.row >> nth=0 >> .row-title'); paste(text='Stationen aufbauen\n- Netzgerät prüfen')
+    page.wait_for_selector('dialog#sheet[open] textarea[name=text]')
+    v0 = reihe_of(getd())['vorhaben'][0]
+    check('Text: Dialog mit Vorhaben unter der Maus', page.input_value('dialog#sheet select[name=v]') == v0['id'] and 'Netzgerät' in page.input_value('dialog#sheet textarea[name=text]'))
+    page.click('dialog#sheet button[value=ok]'); wait_saved()
+    check('Text: als Notiz (Verlaufsplan) gespeichert', 'Stationen aufbauen' in ((reihe_of(getd())['vorhaben'][0].get('planung') or {}).get('verlauf') or ''))
+    # Datei einfügen über einem Vorhaben → direkt dorthin
+    page.hover('.row >> nth=1 >> .row-title')
+    paste(files=[{'n': 'P9 Stromkreis - 4 Kurzschluss - AB.pdf', 'c': '%PDF-KURZ', 't': 'application/pdf'}]); wait_saved()
+    ks = [m for m in mats_of(getd(), 1) if m['titel'] == 'Kurzschluss - AB']
+    check('Datei über Vorhaben eingefügt: direkt, Kurztitel', len(ks) == 1 and ks[0]['bereich'] == 'sus' and page.locator('.sync-modal').count() == 0, [m['titel'] for m in mats_of(getd(), 1)])
+    # Screenshot ohne Ziel → Fenster zum Zuordnen (vor der Seite), Vorhaben pro Datei
+    page.mouse.move(5, 5)
+    paste(files=[{'n': 'P9 Stromkreis - 1 Reihenschaltung.pdf', 'c': '%PDF-R', 't': 'application/pdf'}, {'n': 'image.png', 'c': 'PNGDATA', 't': 'image/png'}])
+    page.wait_for_selector('.sync-modal .sync-panel', timeout=10000); time.sleep(0.3)
+    bb = page.locator('.sync-panel').bounding_box(); vp = page.viewport_size
+    check('Import-Fenster liegt vor der Seite (nicht ganzseitig)', bb['width'] < vp['width'] and bb['x'] > 0)
+    names = page.locator('.sync-panel td.fname').all_inner_texts()
+    check('Screenshot bekommt Namen', any(n.startswith('Screenshot ') and n.endswith('.png') for n in names), names)
+    zs = page.locator('.sync-panel select[data-k=ziel]')
+    check('Vorhaben pro Datei wählbar', zs.count() == 2)
+    vs = reihe_of(getd())['vorhaben']
+    zs.nth(0).select_option('v:' + vs[0]['id']); time.sleep(0.2); zs.nth(1).select_option('v:' + vs[1]['id']); time.sleep(0.2)
+    page.screenshot(path=f'{OUT}/22-import-fenster.png')
+    page.click('.sync-panel [data-s=go]'); wait_saved()
+    d2 = getd()
+    check('Zwei Dateien in verschiedene Vorhaben', any(m['titel'] == 'Reihenschaltung' for m in mats_of(d2, 0)) and any(m['titel'].startswith('Screenshot') for m in mats_of(d2, 1)),
+          ([m['titel'] for m in mats_of(d2, 0)], [m['titel'] for m in mats_of(d2, 1)]))
+    # Einfügen in offenen Dialog: Datei-Feld wird gefüllt
+    edit_on(); page.click('[data-act=edit-bild]'); page.wait_for_selector('dialog#sheet[open]')
+    paste(files=[{'n': 'image.png', 'c': 'PNGDATA2', 't': 'image/png'}])
+    check('Einfügen im Dialog füllt das Bild-Feld', page.is_checked('input[name=bild__mode][value=file]') and page.evaluate("document.querySelector('input[name=bild__file]').files.length") == 1)
+    page.click('dialog#sheet button[value=ok]'); wait_saved()
+    check('Titelbild aus Zwischenablage', reihe_of(getd())['titelbild']['name'].startswith('Screenshot'), reihe_of(getd())['titelbild']['name'])
+    edit_off()
+    page.goto(SITE + '#/f/physik/8/optische-instrumente'); page.wait_for_selector('.rows'); time.sleep(0.3)
+
     # ================= C: Sicherung -> „Alles ersetzen“ =================
     page.evaluate("""async () => { const K = await T.keys('1234','pruefung123'); const d = await T.getData(K);
       const r = d.faecher[1].jahrgaenge[0].reihen.find(x => x.id === 'optische-instrumente');
@@ -1083,6 +1185,8 @@ with sync_playwright() as p:
     with page.expect_download() as dl:
         page.click('[data-act=export-all]')
     spath = OUT + '/sicherung.zip'; dl.value.save_as(spath)
+    znames = zipfile.ZipFile(spath).namelist()
+    check('Export: Originalname der Datei', any(n.endswith('/P9 Stromkreis - 4 Kurzschluss - AB.pdf') for n in znames), [n for n in znames if 'Kurz' in n])
     page.evaluate("""async () => { const K = await T.keys('1234','pruefung123'); const d = await T.getData(K); d.faecher[0].jahrgaenge = []; d.faecher[1].jahrgaenge[0].reihen.reverse(); await T.putData(K, d); }""")
     page.reload()
     page.wait_for_selector('[data-act=import]')
