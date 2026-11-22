@@ -855,7 +855,7 @@ with sync_playwright() as p:
     page.goto(SITE + '#/f/physik/8/optische-instrumente'); page.wait_for_selector('.rows'); edit_on(); time.sleep(0.3)
     page.locator('.row[data-sort-item]').nth(0).locator('[data-act=add-m][data-bereich=sus]').click(); page.wait_for_selector('dialog#sheet[open] select[name=typ]')
     arten = page.eval_on_selector_all('dialog#sheet select[name=typ] option', 'o => o.map(x => x.value)')
-    check('Arten: nur Dokument/Lösung/Prüfung/Buch', arten == ['dokument', 'loesung', 'pruefung', 'buch'], arten)
+    check('Arten: Material/Tafelbild/Lösung/Prüfung/Buch', arten == ['dokument', 'tafelbild', 'loesung', 'pruefung', 'buch'], arten)
     check('Arten: heißt „Material“ statt „Dokument“', page.eval_on_selector('dialog#sheet select[name=typ] option', 'o => o.textContent') == 'Material')
     page.select_option('dialog#sheet select[name=typ]', 'buch')
     check('Buch: kein Datei-Feld, Hinweis-Feld', page.locator('dialog#sheet fieldset[data-slot=datei]').is_hidden() and page.locator('dialog#sheet textarea[name=text]').is_visible())
@@ -1169,6 +1169,125 @@ with sync_playwright() as p:
     page.click('dialog#sheet button[value=ok]'); wait_saved()
     check('Titelbild aus Zwischenablage', reihe_of(getd())['titelbild']['name'].startswith('Screenshot'), reihe_of(getd())['titelbild']['name'])
     edit_off()
+    page.goto(SITE + '#/f/physik/8/optische-instrumente'); page.wait_for_selector('.rows'); time.sleep(0.3)
+
+    # ================= Schneller vorbereiten / Im Unterricht =================
+    import json as _json
+    page.goto(SITE + '#/f/physik/8/optische-instrumente'); page.wait_for_selector('.rows'); edit_off(); time.sleep(0.3)
+    rows = page.locator('.rows > .row[data-v]')
+    nrows = rows.count()
+    check('Auge + Menü ohne Bearbeiten-Modus', rows.nth(0).locator('.row-acts [data-act=vis-v]').is_visible() and rows.nth(0).locator('.row-acts [data-act=menu-v]').is_visible())
+    # letztes Vorhaben ausblenden (ohne Bearbeiten)
+    last = rows.nth(nrows - 1)
+    if 'aus' not in (last.get_attribute('class') or ''):
+        last.locator('.row-acts [data-act=vis-v]').click(); wait_saved()
+    check('Auge ohne Bearbeiten blendet aus', 'aus' in (rows.nth(nrows - 1).get_attribute('class') or ''))
+    # „Bis hier freischalten“ an Vorhaben 3
+    bi = max(0, nrows - 2)
+    rows.nth(bi).locator('[data-act=menu-v]').click(); page.wait_for_selector('.popmenu')
+    page.locator('.popmenu button', has_text='Bis hier freischalten').click()
+    try: wait_saved()
+    except Exception: pass
+    check('Bis hier freischalten', all('aus' not in (rows.nth(i).get_attribute('class') or '') for i in range(bi + 1)), (nrows, bi))
+    akt = [i for i in range(rows.count()) if 'aktuell' in (rows.nth(i).get_attribute('class') or '')]
+    vis = [i for i in range(rows.count()) if 'aus' not in (rows.nth(i).get_attribute('class') or '')]
+    check('Aktuelle Einheit = letzte sichtbare', akt == [vis[-1]] and 'aktuell' in rows.nth(vis[-1]).inner_text().lower(), (akt, vis))
+    # Material-Auge ohne Bearbeiten
+    mw = page.locator('.rows .mwrap [data-act=vis-m]').first
+    mid = mw.get_attribute('data-m'); mw.click(); wait_saved()
+    mm = [m for v in reihe_of(getd())['vorhaben'] for m in v['materialien'] if m['id'] == mid][0]
+    check('Material-Auge ohne Bearbeiten', page.locator('.rows [data-act=vis-m][data-m="' + mid + '"]').count() == 1 and _json.dumps(mm).count('true') >= 1)
+    page.locator('.rows [data-act=vis-m][data-m="' + mid + '"]').click(); wait_saved()
+    # „heute“
+    rows.nth(0).locator('[data-act=menu-v]').click(); page.wait_for_selector('.popmenu')
+    page.locator('.popmenu button', has_text='heute').click(); wait_saved()
+    check('Als „heute“ markieren', 'aktuell' in (rows.nth(0).get_attribute('class') or '') and 'heute' in rows.nth(0).locator('.akt-badge').inner_text().lower())
+    shot('23-aktuell')
+    rows.nth(0).locator('[data-act=menu-v]').click(); page.wait_for_selector('.popmenu')
+    page.locator('.popmenu button', has_text='Nicht mehr').click(); wait_saved()
+    check('„heute“ wieder entfernen', 'aktuell' not in (rows.nth(0).get_attribute('class') or '') or vis[-1] == 0)
+    # Kursansicht: hervorgehoben; Direktlink auf ein Material
+    page.click('#sus-ansicht')
+    page.wait_for_selector('body.kurs .rows'); time.sleep(0.4)
+    check('Kursansicht: aktuelle Einheit hervorgehoben', page.locator('.row.aktuell').count() == 1)
+    kurs_hash = page.evaluate('location.hash')
+    fid = page.locator('.rows [data-open=file][data-m]').first.get_attribute('data-m')
+    ftitel = page.locator('.rows [data-open=file][data-m]').first.locator('span').first.inner_text()
+    page.goto(SITE + kurs_hash + '?m=' + fid); page.wait_for_selector('.viewer', timeout=10000); time.sleep(0.5)
+    check('Direktlink öffnet das Material', page.inner_text('.viewer .viewer-bar b') == ftitel and '?m=' not in page.evaluate('location.hash'), page.evaluate('location.hash'))
+    page.go_back(); time.sleep(0.5)
+    check('Zurück → Gesamtansicht', page.locator('.viewer').count() == 0 and page.locator('body.kurs .rows').count() == 1)
+    page.click('#kurs-exit'); page.wait_for_selector('.crumbs'); time.sleep(0.3)
+    # QR + Arbeitsauftrag im Viewer, Pfeiltasten
+    page.locator('.rows [data-open=file][data-m]').first.click(); page.wait_for_selector('.viewer [data-v=qr]', timeout=10000)
+    t1 = page.inner_text('.viewer .viewer-bar b')
+    page.click('.viewer [data-v=qr]'); page.wait_for_selector('.qr-aside .qr-box svg', timeout=10000)
+    page.fill('.qr-aside textarea', 'Bearbeitet A1, A2')
+    check('QR neben dem Material, Arbeitsauftrag', page.locator('.viewer-main .viewer-body').is_visible() and page.locator('.qr-aside textarea').input_value() == 'Bearbeitet A1, A2')
+    page.keyboard.press('ArrowRight'); time.sleep(0.3)
+    check('Pfeiltaste im Arbeitsauftrag schreibt (kein Wechsel)', page.inner_text('.viewer .viewer-bar b') == t1)
+    shot('24-qr-auftrag')
+    page.locator('.viewer-bar b').click(); page.keyboard.press('ArrowRight'); time.sleep(0.8)
+    t2 = page.inner_text('.viewer .viewer-bar b')
+    check('Pfeiltaste → nächstes Material, QR + Auftrag bleiben', t2 != t1 and page.locator('.qr-aside textarea').input_value() == 'Bearbeitet A1, A2', (t1, t2))
+    page.keyboard.press('ArrowLeft'); time.sleep(0.8)
+    check('Pfeiltaste ← vorheriges Material', page.inner_text('.viewer .viewer-bar b') == t1)
+    check('Arbeitsauftrag wird nicht gespeichert', 'Bearbeitet A1' not in _json.dumps(getd()) and not any('Bearbeitet A1' in (page.evaluate('k => localStorage.getItem(k)', k) or '') for k in page.evaluate('Object.keys(localStorage)')))
+    page.click('.viewer [data-v=qr]'); time.sleep(0.2)
+    check('QR wieder ausblenden', page.locator('.qr-aside').count() == 0)
+    page.go_back(); time.sleep(0.5)
+    # Tafelbild
+    edit_on()
+    rows.nth(1).locator('[data-act=add-m][data-bereich=sus]').click(); page.wait_for_selector('dialog#sheet[open]')
+    page.select_option('dialog#sheet select[name=typ]', 'tafelbild'); time.sleep(0.2)
+    fi = page.locator('input[name=datei__file]')
+    check('Tafelbild: Kamera am iPad, Titel mit Datum', fi.get_attribute('capture') == 'environment' and fi.get_attribute('accept') == 'image/*' and page.input_value('dialog#sheet input[name=titel]').startswith('Tafelbild '))
+    open(FILES + '/tafel.png', 'wb').write(b'\x89PNG\r\n\x1a\nTAFEL')
+    page.set_input_files('input[name=datei__file]', FILES + '/tafel.png'); page.click('dialog#sheet button[value=ok]'); wait_saved()
+    tb = [m for m in reihe_of(getd())['vorhaben'][1]['materialien'] if m['titel'].startswith('Tafelbild ')]
+    check('Tafelbild gespeichert (Mitschrift)', len(tb) == 1 and tb[0]['typ'] == 'mitschrift', [(m['titel'], m['typ']) for m in reihe_of(getd())['vorhaben'][1]['materialien']])
+    # Kopieren in eine andere Reihe
+    page.locator('[data-act=edit-m][data-m="' + tb[0]['id'] + '"]').click(); page.wait_for_selector('dialog#sheet[open] input[name=kopie]')
+    page.select_option('dialog#sheet select[name=o_f]', 'mathe'); time.sleep(0.2)
+    page.select_option('dialog#sheet select[name=o_j]', '6'); time.sleep(0.2)
+    page.select_option('dialog#sheet select[name=o_r]', 'brueche'); time.sleep(0.2)
+    page.check('dialog#sheet input[name=kopie]'); page.click('dialog#sheet button[value=ok]'); wait_saved()
+    d3 = getd(); orig = [m for m in reihe_of(d3)['vorhaben'][1]['materialien'] if m['id'] == tb[0]['id']]
+    kop = [m for v in reihe_of(d3, 'brueche')['vorhaben'] for m in v['materialien'] if m['titel'] == tb[0]['titel']]
+    check('Kopie: Original bleibt, Kopie mit gleicher Datei', len(orig) == 1 and len(kop) == 1 and kop[0]['id'] != tb[0]['id'] and kop[0]['datei']['pfad'] == tb[0]['datei']['pfad'])
+    page.goto(SITE + '#/f/physik/8/optische-instrumente'); page.wait_for_selector('.rows'); edit_on(); time.sleep(0.3)
+    # Mehrfachauswahl
+    page.click('[data-act=auswahl-an]'); page.wait_for_selector('#auswahl-bar')
+    chips = page.locator('.rows .row[data-v] [data-sort=m][data-bereich=sus] [data-act=edit-m]')
+    ids2 = [chips.nth(0).get_attribute('data-m'), chips.nth(1).get_attribute('data-m')]
+    chips.nth(0).click(); chips.nth(1).click(); time.sleep(0.2)
+    check('Auswahl: 2 markiert, kein Dialog', '2 ausgewählt' in page.inner_text('#auswahl-bar') and page.locator('dialog#sheet[open]').count() == 0 and page.locator('.chip.gewaehlt').count() == 2)
+    shot('25-auswahl')
+    page.click('#auswahl-bar [data-a=aus]'); wait_saved()
+    check('Auswahl: zusammen ausgeblendet, Auswahl bleibt', all('aus' in (page.locator('[data-act=edit-m][data-m="' + x + '"]').get_attribute('class') or '') for x in ids2) and page.locator('.chip.gewaehlt').count() == 2)
+    page.click('#auswahl-bar [data-a=ein]'); wait_saved()
+    page.click('#auswahl-bar [data-a=del]'); page.wait_for_selector('#toast.on .toast-btn'); time.sleep(0.3); page.wait_for_selector('#saving:not(.on)', state='attached', timeout=30000)
+    pk = [e['m']['id'] for e in getd().get('papierkorb', [])]
+    check('Auswahl: zusammen in den Papierkorb', all(x in pk for x in ids2) and page.locator('#auswahl-bar').count() == 0)
+    page.click('#toast .toast-btn'); time.sleep(0.5); page.wait_for_selector('#saving:not(.on)', state='attached', timeout=30000); time.sleep(0.3)
+    alle = [m['id'] for v in reihe_of(getd())['vorhaben'] for m in v['materialien']]
+    check('Auswahl: Rückgängig holt alle zurück', all(x in alle for x in ids2))
+    chips = page.locator('.rows .row[data-v] [data-sort=m][data-bereich=sus] [data-act=edit-m]')
+    chips.nth(0).click(modifiers=['Control']); time.sleep(0.2)
+    check('Strg + Klick markiert', page.locator('#auswahl-bar').count() == 1 and '1 ausgewählt' in page.inner_text('#auswahl-bar'))
+    page.locator('body').press('Escape'); time.sleep(0.2)
+    check('Esc beendet die Auswahl', page.locator('#auswahl-bar').count() == 0 and page.locator('.chip.gewaehlt').count() == 0)
+    # Tastenkürzel
+    edit_off(); page.locator('h1').first.click()
+    page.keyboard.press('e'); time.sleep(0.3)
+    on = page.locator('body.editing').count() == 1
+    page.keyboard.press('e'); time.sleep(0.3)
+    check('Taste E: Bearbeiten an/aus', on and page.locator('body.editing').count() == 0)
+    page.hover('.rows > .row[data-v] >> nth=1 >> .row-title'); page.keyboard.press('n'); page.wait_for_selector('dialog#sheet[open] select[name=o_v]')
+    check('Taste N: neues Material im Vorhaben unter der Maus', page.input_value('dialog#sheet select[name=o_v]') == reihe_of(getd())['vorhaben'][1]['id'])
+    page.click('dialog#sheet button[value=cancel]'); time.sleep(0.2)
+    page.keyboard.press('/'); page.wait_for_selector('#such-feld'); time.sleep(0.2)
+    check('Taste /: Suche', page.evaluate('location.hash') == '#/suche' and page.evaluate("document.activeElement && document.activeElement.id") == 'such-feld')
     page.goto(SITE + '#/f/physik/8/optische-instrumente'); page.wait_for_selector('.rows'); time.sleep(0.3)
 
     # ================= C: Sicherung -> „Alles ersetzen“ =================

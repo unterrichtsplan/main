@@ -139,6 +139,21 @@ Materialsammlung als Web-App (GitHub Pages). Schülerinnen, Schüler und Lehrkr�
 - Screenshots heißen „Screenshot JJJJ-MM-TT hh-mm-ss.png“.
 - Material-Dialog: **Enter** speichert, **Entf** löscht (nicht beim Schreiben in einem Feld).
 
+## Im Unterricht
+
+- **Ein- und ausblenden ohne Bearbeiten-Modus:** kleines Auge an jedem Vorhaben und Unterrichtsmaterial (gilt für den gewählten Kurs).
+- **„⋯“ an einem Vorhaben:** „Bis hier freischalten“ (alle Vorhaben bis einschließlich diesem) und „Als heute markieren“ (gilt nur heute).
+- **Aktuelle Einheit:** Das letzte für SuS sichtbare Vorhaben ist leicht hervorgehoben (solange noch nicht alles freigeschaltet ist). In der Kursansicht springt die Seite dorthin, wenn sie sonst nicht zu sehen wäre. „Heute“ hat Vorrang.
+- **QR-Code zu einem Material:** Material öffnen → „QR“. Rechts erscheinen ein QR-Code direkt zu diesem Material (Kursansicht des gewählten Kurses) und ein großes Feld für den Arbeitsauftrag. Der Arbeitsauftrag wird nicht gespeichert. Ist das Material für SuS noch ausgeblendet, gibt es „Jetzt freischalten“. SuS können danach zur Gesamtansicht zurück.
+- **Präsentieren:** „Vollbild“ (Taste F), Pfeiltasten → nächstes/vorheriges Material.
+- **Tafelbild:** Art „Tafelbild (Foto)“ – am iPad öffnet sich direkt die Kamera, Titel „Tafelbild TT.MM.“.
+
+## Schneller vorbereiten
+
+- **Material kopieren:** Material bearbeiten → Ort (Fach/Jahrgang/Reihe/Vorhaben) wählen → „Als Kopie dort anlegen“. Die Datei wird nicht doppelt gespeichert.
+- **Mehrere Materialien:** Bearbeiten → „Auswählen“ (am Laptop: Strg + Klick) → zusammen ein-/ausblenden, verschieben oder löschen (Papierkorb, mit „Rückgängig“).
+- **Tastenkürzel (Laptop):** E = Bearbeiten an/aus, / = Suche, N = neues Material im Vorhaben unter der Maus, Esc = Auswahl beenden.
+
 ## Papierkorb
 
 - Gelöschtes Material kommt in den Papierkorb (**Einstellungen → Speicher**). Direkt nach dem Löschen: „Rückgängig“ im Hinweis unten.
