@@ -484,6 +484,10 @@ with sync_playwright() as p:
             page.click('#edit-toggle'); page.wait_for_selector('body.editing')
     def edit_off():
         if page.locator('body.editing').count(): page.click('#edit-toggle'); time.sleep(0.3)
+    def pen(scope, text):   # Stift am Material (Bearbeiten-Modus) – Antippen des Chips öffnet das Material
+        return scope.locator('.mwrap', has=page.locator('.chip', has_text=text)).first.locator('[data-act=edit-m]')
+    def sus_ansicht():
+        page.click('[data-act=share-r]'); page.wait_for_selector('dialog#sheet[open] [data-x=open]'); page.click('dialog#sheet [data-x=open]')
     page.goto(SITE + R); page.wait_for_selector('.rows'); edit_on()
     # Vorhaben 1 erst ab morgen
     page.locator('.row').nth(0).locator('[data-act=edit-v]').click(); page.wait_for_selector('dialog#sheet[open] input[name=ab]')
@@ -627,17 +631,17 @@ with sync_playwright() as p:
     d = page.evaluate("async () => { const K = await T.keys('1234','pruefung123'); return T.getData(K); }")
     v0 = [x for x in d['faecher'][1]['jahrgaenge'][0]['reihen'] if x['id'] == 'optische-instrumente'][0]['vorhaben'][0]
     check('D: Notizen gespeichert (Ziel, Verlauf, Reflexion)', v0.get('planung') == {'ziel': 'SuS erklären die Bildentstehung', 'verlauf': 'Einstieg\nErarbeitung\nSicherung', 'reflexion': 'Gruppenphase lief gut'}, v0.get('planung'))
-    page.locator('.row').nth(0).locator('.row-main > .chips [data-act=edit-m]', has_text='Nachricht an Lena').click()
+    pen(page.locator('.row').nth(0).locator('.row-main > .chips'), 'Nachricht an Lena').click()
     page.wait_for_selector('dialog#sheet[open] select[name=niveau]')
     page.select_option('select[name=niveau]', '2'); page.click('dialog#sheet button[value=ok]'); wait_saved()
-    page.locator('.row').nth(0).locator('[data-act=edit-m]', has_text='AB Spiegel-Parcours').first.click()
+    pen(page.locator('.row').nth(0), 'AB Spiegel-Parcours').click()
     page.wait_for_selector('dialog#sheet[open] select[name=niveau]')
     check('D: Niveau-Auswahl im Dialog (ohne/Basis/Standard/Erweiterung)', page.locator('select[name=niveau] option').count() == 4 and page.input_value('select[name=niveau]') == '')
     page.select_option('select[name=niveau]', '3'); page.click('dialog#sheet button[value=ok]'); wait_saved()
     d = page.evaluate("async () => { const K = await T.keys('1234','pruefung123'); return T.getData(K); }")
     ms0 = [x for x in d['faecher'][1]['jahrgaenge'][0]['reihen'] if x['id'] == 'optische-instrumente'][0]['vorhaben'][0]['materialien']
     check('D: Niveau gespeichert', sorted((m['titel'], m.get('niveau')) for m in ms0 if m.get('niveau')) == [('AB Spiegel-Parcours', 3), ('Nachricht an Lena', 2)], [(m['titel'], m.get('niveau')) for m in ms0])
-    page.locator('.row').nth(1).locator('[data-act=edit-m]', has_text='AB Linsen').first.click()   # Vorhaben 2 ist in der Kursansicht sichtbar
+    pen(page.locator('.row').nth(1), 'AB Linsen').click()   # Vorhaben 2 ist in der Kursansicht sichtbar
     page.wait_for_selector('dialog#sheet[open] select[name=niveau]'); page.select_option('select[name=niveau]', '1'); page.click('dialog#sheet button[value=ok]'); wait_saved()
     page.click('#edit-toggle'); time.sleep(0.4)
     row0 = page.locator('.row').nth(0)
@@ -789,7 +793,9 @@ with sync_playwright() as p:
     check('E: Einstellungen-Kategorien', tabs == ['Info', 'Zugang', 'Verwaltung', 'Speicher'] and page.locator('.tabs a.on').inner_text() == 'Zugang', tabs)
     check('E: Zugang ohne Verwaltung/Speicher', page.locator('#cfg-form').count() == 1 and page.locator('[data-act=sync]').count() == 0 and page.locator('.store-list').count() == 0)
     page.click('.tabs a[data-tab=info]'); page.wait_for_selector('.info-list')
-    check('E: Info mit Erklärungen', page.locator('.info-list details').count() >= 10 and 'Checkliste' in page.inner_text('.info-list'))
+    check('E: Info in wenigen Gruppen', 4 <= page.locator('.info-list > details').count() <= 8 and page.locator('.info-list dt').count() >= 20)
+    page.locator('.info-list > details > summary', has_text='Im Unterricht').click(); time.sleep(0.2)
+    check('E: Info-Gruppe aufklappbar mit Fragen', page.locator('.info-list details[open] dt', has_text='QR-Code').count() == 1)
     shot('25-einstellungen-info')
     page.click('.tabs a[data-tab=verwaltung]'); page.wait_for_selector('[data-act=sync]')
     check('E: Verwaltung', page.locator('[data-act=export-all]').count() == 1 and page.locator('[data-act=vorlage]').count() == 2 and page.locator('#cfg-form').count() == 0)
@@ -813,6 +819,11 @@ with sync_playwright() as p:
         page.mouse.move(a['x'] + a['width'] / 2, a['y'] + a['height'] / 2); page.mouse.down()
         ty = b['y'] + (4 if oben else b['height'] - 4); tx = (b['x'] + 6 if oben else b['x'] + b['width'] - 6) if dx else b['x'] + b['width'] / 2
         for i in range(1, 13): page.mouse.move(a['x'] + a['width'] / 2 + (tx - a['x'] - a['width'] / 2) * i / 12, a['y'] + a['height'] / 2 + (ty - a['y'] - a['height'] / 2) * i / 12); time.sleep(0.03)
+        # Ziel kann sich verschoben haben (Quelle wurde kleiner) → wie ein Mensch nachführen
+        time.sleep(0.1); b2 = dst.bounding_box()
+        if b2 and abs(b2['y'] - b['y']) > 2:
+            ty = b2['y'] + (4 if oben else b2['height'] - 4); tx = (b2['x'] + 6 if oben else b2['x'] + b2['width'] - 6) if dx else b2['x'] + b2['width'] / 2
+            page.mouse.move(tx, ty + 1); time.sleep(0.05); page.mouse.move(tx, ty); time.sleep(0.05)
         time.sleep(0.15); page.mouse.up()
     page.goto(SITE + '#/f/physik/8/optische-instrumente'); page.wait_for_selector('.rows'); edit_on(); time.sleep(0.3)
     check('Ziehen: Griff statt Pfeile', page.locator('.row [data-act=up-v]').count() == 0 and page.locator('.row .grip').count() >= 2)
@@ -836,9 +847,13 @@ with sync_playwright() as p:
     check('Ziehen: Material nach vorne', sus1 == [sus0[-1]] + sus0[:-1], (sus0, sus1))
     check('Ziehen: Lehrkraft-Material unverändert', [(i, m['id']) for i, m in enumerate(v2['materialien']) if m['bereich'] == 'lk'] == lkpos0)
     check('Ziehen: kein Dialog nach dem Ziehen', page.locator('dialog#sheet[open]').count() == 0)
-    page.locator('.row[data-sort-item]').nth(vi).locator('[data-sort=m] .chip[data-act=edit-m]').first.click(); page.wait_for_selector('dialog#sheet[open]')
-    check('Ziehen: Antippen öffnet weiter das Material', page.locator('dialog#sheet[open]').count() == 1)
+    page.locator('.row[data-sort-item]').nth(vi).locator('[data-sort=m] [data-act=edit-m]').first.click(); page.wait_for_selector('dialog#sheet[open]')
+    check('Ziehen: Stift öffnet weiter den Dialog', page.locator('dialog#sheet[open]').count() == 1)
     page.keyboard.press('Escape'); time.sleep(0.3)
+    page.locator('.row[data-sort-item]').nth(vi).locator('[data-sort=m][data-bereich=sus] > .mwrap > .chip[data-open=file]').first.click(); page.wait_for_selector('.viewer', timeout=10000)
+    check('Bearbeiten-Modus: Antippen öffnet das Material', page.locator('.viewer').count() == 1 and page.locator('dialog#sheet[open]').count() == 0)
+    page.go_back(); time.sleep(0.4)
+    check('Bearbeiten-Modus bleibt nach dem Ansehen', page.locator('body.editing').count() == 1)
     shot('27-ziehen-reihe')
     # Reihen im Jahrgang
     page.goto(SITE + '#/f/physik/8'); page.wait_for_selector('.reihen'); time.sleep(0.3)
@@ -868,7 +883,13 @@ with sync_playwright() as p:
     check('Buch: gespeichert ohne Datei', len(bs) == 2 and all(m['datei'] is None and m['url'] is None for m in bs) and bs[0].get('text', '').startswith('**Tipp:** Merkkasten') and 'text' not in bs[1], bs)
     # Dokument: Art bleibt beim Bearbeiten erhalten (HTML-Seite bleibt html)
     edit_off(); time.sleep(0.3)
-    check('LK-Bereich standardmäßig offen', page.locator('.lk-area').first.is_visible())
+    check('LK-Bereich in der normalen Ansicht zugeklappt', page.locator('.lk-area').count() > 0 and not page.locator('.lk-area').first.is_visible())
+    page.locator('.lk-toggle').first.click(); time.sleep(0.2)
+    check('LK-Bereich einzeln aufklappbar', page.locator('.lk-area').first.is_visible())
+    edit_on(); time.sleep(0.2)
+    check('LK-Bereich im Bearbeiten-Modus offen', all(page.locator('.lk-area').nth(i).is_visible() for i in range(page.locator('.lk-area').count())))
+    edit_off(); time.sleep(0.2)
+    check('Nach „Fertig“ wieder alles zugeklappt', not any(page.locator('.lk-area').nth(i).is_visible() for i in range(page.locator('.lk-area').count())))
     bchip = page.locator('.row').nth(0).locator('.chip.t-buch', has_text='S. 112')
     check('Buch: Titel + „Hinweis ›“ sichtbar', bchip.count() == 1 and 'Hinweis' in bchip.inner_text())
     bchip.click(); page.wait_for_selector('dialog#sheet[open] .buch-text')
@@ -880,7 +901,8 @@ with sync_playwright() as p:
     page.click('dialog#sheet button[value=ok]'); time.sleep(0.3)
     check('Buch: ohne Hinweis nicht antippbar', page.locator('.row').nth(0).locator('span.chip.t-buch.still', has_text='S. 113').count() == 1)
     # SuS-Ansicht
-    page.click('#sus-ansicht'); page.wait_for_selector('body.kurs .rows'); time.sleep(0.4)
+    check('Kein eigener Knopf „SuS-Ansicht“ mehr', page.locator('#sus-ansicht').count() == 0)
+    sus_ansicht(); page.wait_for_selector('body.kurs .rows'); time.sleep(0.4)
     check('SuS-Ansicht: Kursansicht ohne Lehrkraft-Bereich', '#/kurs/physik/8/optische-instrumente' in page.url and page.locator('.lk-area').count() == 0 and page.locator('#kurs-exit').is_visible())
     page.click('#kurs-exit'); page.wait_for_selector('.rows'); time.sleep(0.3)
     check('SuS-Ansicht: zurück zur Lehrkraft-Ansicht', page.url.endswith('#/f/physik/8/optische-instrumente') or '/f/physik/8/optische-instrumente' in page.url)
@@ -907,7 +929,7 @@ with sync_playwright() as p:
     ziehe(row0.locator('[data-sort=m][data-bereich=sus] > [data-sort-item]', has_text='S. 113').first.locator('.chip'), row1.locator('[data-sort=m][data-bereich=sus] > [data-sort-item]').nth(0), oben=True, dx=1); wait_saved()
     d = getd(); v0c, v1c = reihe_of(d)['vorhaben'][0], reihe_of(d)['vorhaben'][1]
     check('Verschieben: in anderes Vorhaben', any(m['titel'] == 'S. 113 Nr. 7' for m in v1c['materialien']) and not any(m['titel'] == 'S. 113 Nr. 7' for m in v0c['materialien']))
-    check('Verschieben: dort an erster Stelle', [m['titel'] for m in v1c['materialien'] if m['bereich'] == 'sus'][0] == 'S. 113 Nr. 7')
+    check('Verschieben: dort an erster Stelle', [m['titel'] for m in v1c['materialien'] if m['bereich'] == 'sus'][0] == 'S. 113 Nr. 7', [m['titel'] for m in v1c['materialien'] if m['bereich'] == 'sus'])
     shot('29-verschoben')
     edit_off()
     page.goto(SITE + '#/f/physik/8/optische-instrumente'); page.wait_for_selector('.rows'); time.sleep(0.3)
@@ -1001,7 +1023,7 @@ with sync_playwright() as p:
     edit_on(); time.sleep(0.3)
     stale = None; d3 = getd(); stale = dict(repo)
     weg = next(m for v in reihe_of(d3)['vorhaben'] for m in v['materialien'] if m['titel'] == 'Lösungsblatt später')
-    page.locator('.chip', has_text='Lösungsblatt später').first.click(); page.wait_for_selector('dialog#sheet[open]')
+    pen(page, 'Lösungsblatt später').click(); page.wait_for_selector('dialog#sheet[open]')
     page.click('dialog#sheet button[value=delete]')
     page.wait_for_function("() => !document.querySelector('.rows').innerText.includes('Lösungsblatt später')", timeout=5000)
     check('Löschen: Eintrag sofort weg', True)
@@ -1089,13 +1111,13 @@ with sync_playwright() as p:
     bl = [m for m in mats_of(getd(), 1) if m['titel'] == 'Blitz-Check - Stationskarten']
     check('Enter im neuen Material speichert', len(bl) == 1 and bl[0]['datei']['name'] == 'P9 Stromkreis - 3 Blitz-Check - Stationskarten.pdf', [m['titel'] for m in mats_of(getd(), 1)])
     # Enter beim Bearbeiten: speichern statt löschen
-    page.locator('.row').nth(1).locator('.chip', has_text='Blitz-Check').first.click(); page.wait_for_selector('dialog#sheet[open] button[value=delete]')
+    pen(page.locator('.row').nth(1), 'Blitz-Check').click(); page.wait_for_selector('dialog#sheet[open] button[value=delete]')
     page.fill('dialog#sheet input[name=titel]', 'Blitz-Check - Stationen'); page.focus('dialog#sheet input[name=titel]'); page.keyboard.press('Enter'); wait_saved()
     bl = [m for m in mats_of(getd(), 1) if m['titel'].startswith('Blitz-Check')]
     check('Enter beim Bearbeiten speichert (nicht löschen)', len(bl) == 1 and bl[0]['titel'] == 'Blitz-Check - Stationen' and len(dialogs) == n_d, [m['titel'] for m in bl] + dialogs[n_d:])
     bid = bl[0]['id']; pos = [m['id'] for m in mats_of(getd(), 1)].index(bid)
     # Entf löscht → Papierkorb, ein Hinweis mit „Rückgängig“, keine Rückfragen
-    page.locator('.row').nth(1).locator('.chip', has_text='Blitz-Check').first.click(); page.wait_for_selector('dialog#sheet[open] button[value=delete]')
+    pen(page.locator('.row').nth(1), 'Blitz-Check').click(); page.wait_for_selector('dialog#sheet[open] button[value=delete]')
     page.locator('dialog#sheet select').first.focus(); page.keyboard.press('Delete')
     page.wait_for_selector('#toast.on .toast-btn', timeout=5000)
     check('Entf löscht ohne Rückfrage, Hinweis mit „Rückgängig“', len(dialogs) == n_d and 'Papierkorb' in page.inner_text('#toast') and not page.locator('.row').nth(1).locator('.chip', has_text='Blitz-Check').count(), dialogs[n_d:])
@@ -1106,7 +1128,7 @@ with sync_playwright() as p:
     dk = getd()
     check('Rückgängig: wieder an derselben Stelle', [m['id'] for m in mats_of(dk, 1)].index(bid) == pos and not any(e['m']['id'] == bid for e in dk.get('papierkorb', [])))
     # Papierkorb in den Einstellungen: wiederherstellen
-    page.locator('.row').nth(1).locator('.chip', has_text='Blitz-Check').first.click(); page.wait_for_selector('dialog#sheet[open] button[value=delete]')
+    pen(page.locator('.row').nth(1), 'Blitz-Check').click(); page.wait_for_selector('dialog#sheet[open] button[value=delete]')
     page.click('dialog#sheet button[value=delete]'); time.sleep(0.4); page.wait_for_selector('#saving:not(.on)', state='attached', timeout=30000)
     page.goto(SITE + '#/einstellungen/speicher'); page.wait_for_selector('#papierkorb')
     check('Papierkorb in Einstellungen → Speicher', 'Blitz-Check - Stationen' in page.inner_text('#papierkorb') and 'Papierkorb leeren' in page.inner_text('#papierkorb'))
@@ -1115,7 +1137,7 @@ with sync_playwright() as p:
     check('Papierkorb: Wiederherstellen', any(m['id'] == bid for m in mats_of(getd(), 1)))
     # Vorhaben löschen → Material in den Papierkorb, wiederherstellen legt das Vorhaben neu an (ausgeblendet)
     page.goto(SITE + '#/f/physik/8/optische-instrumente'); page.wait_for_selector('.rows'); edit_on(); time.sleep(0.3)
-    page.locator('.row').nth(1).locator('.chip', has_text='Blitz-Check').first.click(); page.wait_for_selector('dialog#sheet[open] button[value=delete]')
+    pen(page.locator('.row').nth(1), 'Blitz-Check').click(); page.wait_for_selector('dialog#sheet[open] button[value=delete]')
     page.click('dialog#sheet button[value=delete]'); time.sleep(0.4); page.wait_for_selector('#saving:not(.on)', state='attached', timeout=30000); time.sleep(0.3)
     pf = next(e for e in getd()['papierkorb'] if e['m']['id'] == bid)['m']['datei']['pfad']
     # Leeren: Datei endgültig weg
@@ -1127,7 +1149,7 @@ with sync_playwright() as p:
     page.locator('.row').nth(0).locator('[data-act=add-m][data-bereich=sus]').click(); page.wait_for_selector('dialog#sheet[open]')
     open(FILES + '/Alt.pdf', 'wb').write(b'%PDF-ALT'); page.set_input_files('input[name=datei__file]', FILES + '/Alt.pdf')
     page.click('dialog#sheet button[value=ok]'); wait_saved()
-    page.locator('.row').nth(0).locator('.chip', has_text='Alt').first.click(); page.wait_for_selector('dialog#sheet[open] button[value=delete]')
+    pen(page.locator('.row').nth(0), 'Alt').click(); page.wait_for_selector('dialog#sheet[open] button[value=delete]')
     page.click('dialog#sheet button[value=delete]'); time.sleep(0.4); page.wait_for_selector('#saving:not(.on)', state='attached', timeout=30000); time.sleep(0.3)
     alt_pf = getd()['papierkorb'][0]['m']['datei']['pfad']
     page.evaluate("async () => { const K = await T.keys('1234','pruefung123'); const d = await T.getData(K); d.papierkorb[0].am = '2020-01-01'; await T.putData(K, d); }")
@@ -1207,7 +1229,7 @@ with sync_playwright() as p:
     page.locator('.popmenu button', has_text='Nicht mehr').click(); wait_saved()
     check('„heute“ wieder entfernen', 'aktuell' not in (rows.nth(0).get_attribute('class') or '') or vis[-1] == 0)
     # Kursansicht: hervorgehoben; Direktlink auf ein Material
-    page.click('#sus-ansicht')
+    sus_ansicht()
     page.wait_for_selector('body.kurs .rows'); time.sleep(0.4)
     check('Kursansicht: aktuelle Einheit hervorgehoben', page.locator('.row.aktuell').count() == 1)
     kurs_hash = page.evaluate('location.hash')
@@ -1257,14 +1279,14 @@ with sync_playwright() as p:
     check('Kopie: Original bleibt, Kopie mit gleicher Datei', len(orig) == 1 and len(kop) == 1 and kop[0]['id'] != tb[0]['id'] and kop[0]['datei']['pfad'] == tb[0]['datei']['pfad'])
     page.goto(SITE + '#/f/physik/8/optische-instrumente'); page.wait_for_selector('.rows'); edit_on(); time.sleep(0.3)
     # Mehrfachauswahl
-    page.click('[data-act=auswahl-an]'); page.wait_for_selector('#auswahl-bar')
-    chips = page.locator('.rows .row[data-v] [data-sort=m][data-bereich=sus] [data-act=edit-m]')
+    chips = page.locator('.rows .row[data-v] [data-sort=m][data-bereich=sus] > .mwrap[data-m]')
     ids2 = [chips.nth(0).get_attribute('data-m'), chips.nth(1).get_attribute('data-m')]
-    chips.nth(0).click(); chips.nth(1).click(); time.sleep(0.2)
+    chips.nth(0).locator('.chip').click(modifiers=['Control']); page.wait_for_selector('#auswahl-bar')
+    chips.nth(1).locator('.chip').click(); time.sleep(0.2)
     check('Auswahl: 2 markiert, kein Dialog', '2 ausgewählt' in page.inner_text('#auswahl-bar') and page.locator('dialog#sheet[open]').count() == 0 and page.locator('.chip.gewaehlt').count() == 2)
     shot('25-auswahl')
     page.click('#auswahl-bar [data-a=aus]'); wait_saved()
-    check('Auswahl: zusammen ausgeblendet, Auswahl bleibt', all('aus' in (page.locator('[data-act=edit-m][data-m="' + x + '"]').get_attribute('class') or '') for x in ids2) and page.locator('.chip.gewaehlt').count() == 2)
+    check('Auswahl: zusammen ausgeblendet, Auswahl bleibt', all('aus' in (page.locator('.mwrap[data-m="' + x + '"] > .chip').get_attribute('class') or '') for x in ids2) and page.locator('.chip.gewaehlt').count() == 2)
     page.click('#auswahl-bar [data-a=ein]'); wait_saved()
     page.click('#auswahl-bar [data-a=del]'); page.wait_for_selector('#toast.on .toast-btn'); time.sleep(0.3); page.wait_for_selector('#saving:not(.on)', state='attached', timeout=30000)
     pk = [e['m']['id'] for e in getd().get('papierkorb', [])]
@@ -1272,8 +1294,8 @@ with sync_playwright() as p:
     page.click('#toast .toast-btn'); time.sleep(0.5); page.wait_for_selector('#saving:not(.on)', state='attached', timeout=30000); time.sleep(0.3)
     alle = [m['id'] for v in reihe_of(getd())['vorhaben'] for m in v['materialien']]
     check('Auswahl: Rückgängig holt alle zurück', all(x in alle for x in ids2))
-    chips = page.locator('.rows .row[data-v] [data-sort=m][data-bereich=sus] [data-act=edit-m]')
-    chips.nth(0).click(modifiers=['Control']); time.sleep(0.2)
+    chips = page.locator('.rows .row[data-v] [data-sort=m][data-bereich=sus] > .mwrap[data-m]')
+    chips.nth(0).locator('.chip').click(modifiers=['Control']); time.sleep(0.2)
     check('Strg + Klick markiert', page.locator('#auswahl-bar').count() == 1 and '1 ausgewählt' in page.inner_text('#auswahl-bar'))
     page.locator('body').press('Escape'); time.sleep(0.2)
     check('Esc beendet die Auswahl', page.locator('#auswahl-bar').count() == 0 and page.locator('.chip.gewaehlt').count() == 0)
@@ -1289,6 +1311,38 @@ with sync_playwright() as p:
     page.keyboard.press('/'); page.wait_for_selector('#such-feld'); time.sleep(0.2)
     check('Taste /: Suche', page.evaluate('location.hash') == '#/suche' and page.evaluate("document.activeElement && document.activeElement.id") == 'such-feld')
     page.goto(SITE + '#/f/physik/8/optische-instrumente'); page.wait_for_selector('.rows'); time.sleep(0.3)
+
+    # ================= Planung pro Reihe, „+ Material“-Menü =================
+    page.goto(SITE + '#/f/physik/8/optische-instrumente'); page.wait_for_selector('.rows'); edit_off(); time.sleep(0.3)
+    check('Planung: ohne Inhalt in der normalen Ansicht unsichtbar', page.locator('.plan-box').count() == 0 and not page.locator('[data-act=edit-plan]').first.is_visible())
+    check('Unten kein „Auswählen“/„Ordner hochladen“ mehr', page.locator('[data-act=auswahl-an]').count() == 0 and page.locator('.rows ~ .btnline [data-act=sync-r], .btnline [data-act=sync-r]').count() == 0)
+    edit_on()
+    page.click('[data-act=edit-plan]'); page.wait_for_selector('dialog#sheet[open] textarea[name=plan]')
+    page.fill('dialog#sheet textarea[name=plan]', '# Nächste Woche\n[ ] AB Reihenschaltung erstellen\n[x] Versuch testen\n# Nächstes Mal\n- mehr Zeitpuffer einplanen')
+    page.click('dialog#sheet button[value=ok]'); wait_saved()
+    check('Planung gespeichert', reihe_of(getd()).get('plan', '').startswith('# Nächste Woche\n[ ] AB Reihenschaltung'))
+    edit_off(); time.sleep(0.3)
+    pbx = page.locator('.plan-box')
+    check('Planung: Kasten unten, To-dos als Kästchen', pbx.count() == 1 and pbx.locator('input[type=checkbox]').count() == 2 and '1 offen' in pbx.inner_text() and pbx.locator('h4').count() == 2 and pbx.locator('.plan-todo.fertig').count() == 1)
+    shot('26-planung')
+    pbx.locator('input[type=checkbox]').first.click(); wait_saved()
+    check('Planung: abhaken speichert', '[x] AB Reihenschaltung' in reihe_of(getd()).get('plan', '') and 'offen' not in page.locator('.plan-box .plan-head').inner_text())
+    page.hover('.plan-box .plan-body'); paste(text='[ ] Klausur vorbereiten')
+    page.wait_for_selector('#toast.on'); page.wait_for_selector('#saving:not(.on)', state='attached', timeout=30000); time.sleep(0.4)
+    check('Planung: Strg+V über dem Kasten hängt an', reihe_of(getd()).get('plan', '').endswith('\n[ ] Klausur vorbereiten') and page.locator('dialog#sheet[open]').count() == 0)
+    page.click('#search-btn'); page.wait_for_selector('#such-feld'); page.fill('#such-feld', 'Zeitpuffer'); time.sleep(0.6)
+    check('Suche findet Planung', 'Sehhilfen' in page.inner_text('#such-treffer'))
+    page.goto(SITE + '#/kurs/physik/8/optische-instrumente'); page.wait_for_selector('body.kurs .rows'); time.sleep(0.3)
+    check('Planung nie in der Kursansicht', page.locator('.plan-box').count() == 0 and 'Zeitpuffer' not in page.inner_text('#app'))
+    page.click('#kurs-exit'); page.wait_for_selector('.crumbs'); time.sleep(0.3)
+    edit_on()
+    page.click('#add-material'); page.wait_for_selector('.popmenu')
+    check('„+ Material“: Material oder Ordner', page.locator('.popmenu button').count() == 2 and 'Ordner' in page.inner_text('.popmenu'))
+    page.locator('.popmenu button', has_text='Material').first.click(); page.wait_for_selector('dialog#sheet[open] select[name=o_r]')
+    check('„+ Material“ → Material in dieser Reihe', page.input_value('dialog#sheet select[name=o_r]') == 'optische-instrumente')
+    page.click('dialog#sheet button[value=cancel]'); time.sleep(0.2)
+    check('Notizen-Knopf mit eigenem Symbol', page.locator('[data-act=notiz-v] svg').first.inner_html() != page.locator('[data-act=edit-m] svg').first.inner_html())
+    edit_off()
 
     # ================= C: Sicherung -> „Alles ersetzen“ =================
     page.evaluate("""async () => { const K = await T.keys('1234','pruefung123'); const d = await T.getData(K);
