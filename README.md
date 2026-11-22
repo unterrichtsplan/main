@@ -103,8 +103,16 @@ Materialsammlung als Web-App (GitHub Pages). Schülerinnen, Schüler und Lehrkr�
 ## Notizen pro Vorhaben
 
 - Bearbeiten → im Lehrkraft-Bereich eines Vorhabens **Notizen**: Schwerpunktziel, Verlaufsplan, Reflexion („Was lief gut?“). Einfacher Text, kein extra Dokument.
-- Nur in der Lehrkraft-Ansicht (aufklappbar wie das Lehrkraft-Material), nie in der Kursansicht oder im SuS-Download. Mit Export und Sicherung gesichert.
+- Nur in der Lehrkraft-Ansicht, nie in der Kursansicht oder im SuS-Download. Mit Export und Sicherung gesichert.
 - Keine Schülernamen eintragen (Notizen sind mit dem Zugangscode verschlüsselt, siehe unten).
+- **Lehrkraft-Bereich** (Lehrkraft-Material + Notizen): in der normalen Ansicht zugeklappt, einzeln aufklappbar; im Bearbeiten-Modus immer offen. Nach „Fertig“ ist wieder alles zugeklappt.
+
+## Planung pro Reihe
+
+- Lila Kasten **„Planung · nur für dich“** unten in der Reihe (Bearbeiten → „Planung für mich“, danach Stift am Kasten).
+- Für To-dos der nächsten Wochen und Ideen für den nächsten Durchgang: `[ ] …` wird zum Kästchen (antippen = erledigt, durchgestrichen), `# …` zur Überschrift, sonst Text wie in Notizen (**fett**, Listen …).
+- Strg+V mit Text, während die Maus über dem Kasten ist, hängt den Text an.
+- Nie in der Kursansicht. Wird durchsucht, exportiert und beim neuen Schuljahr behalten (erledigte To-dos werden auf Wunsch entfernt).
 
 ## Niveau ★ / ★★ / ★★★
 
@@ -118,7 +126,7 @@ Materialsammlung als Web-App (GitHub Pages). Schülerinnen, Schüler und Lehrkr�
 
 ## Ordner vom Laptop hochladen (Sammel-Upload)
 
-- **Einstellungen → Verwaltung → Ordner oder Dateien hochladen**, im Bearbeiten-Modus auch in Jahrgang und Reihe. Am Laptop: Ordner wählen oder einfach auf die Seite bzw. auf eine Zeile ziehen. Auf dem iPad: Ordner in der Dateien-App komprimieren und die ZIP wählen, oder mehrere Dateien auf einmal auswählen.
+- **Oben „+ Material“ → „Ordner oder mehrere Dateien“** (Bearbeiten-Modus) oder **Einstellungen → Verwaltung → Ordner oder Dateien hochladen**. Am Laptop: Ordner wählen oder einfach auf die Seite bzw. auf eine Zeile ziehen. Auf dem iPad: Ordner in der Dateien-App komprimieren und die ZIP wählen, oder mehrere Dateien auf einmal auswählen.
 - Erwartete Ablage (wie bisher): `… / 2526 M 6 / M 6 Brüche / M 6 Brüche - 2 Bruchrechnung Fehler.pdf`
   - **Fach und Jahrgang** aus Ordnernamen wie „2526 M 6“, „M 6 Brüche“ oder „Ph Q2“ (M/Ma/Mathe, P/Ph/Physik, NW; 5–10, EF, Q1, Q2). Für NW muss das Fach vorher angelegt sein.
   - **Reihe** = Ordner, in dem die Dateien liegen („M 6 Brüche“ → Reihe „Brüche“).
@@ -151,7 +159,8 @@ Materialsammlung als Web-App (GitHub Pages). Schülerinnen, Schüler und Lehrkr�
 ## Schneller vorbereiten
 
 - **Material kopieren:** Material bearbeiten → Ort (Fach/Jahrgang/Reihe/Vorhaben) wählen → „Als Kopie dort anlegen“. Die Datei wird nicht doppelt gespeichert.
-- **Mehrere Materialien:** Bearbeiten → „Auswählen“ (am Laptop: Strg + Klick) → zusammen ein-/ausblenden, verschieben oder löschen (Papierkorb, mit „Rückgängig“).
+- **Im Bearbeiten-Modus Material ansehen:** Antippen öffnet das Material wie sonst, der **Stift** daneben öffnet „Material bearbeiten“. Ziehen am Chip verschiebt.
+- **Mehrere Materialien (Laptop):** im Bearbeiten-Modus Strg + Klick → weitere antippen → zusammen ein-/ausblenden, verschieben oder löschen (Papierkorb, mit „Rückgängig“). Esc beendet.
 - **Tastenkürzel (Laptop):** E = Bearbeiten an/aus, / = Suche, N = neues Material im Vorhaben unter der Maus, Esc = Auswahl beenden.
 
 ## Papierkorb

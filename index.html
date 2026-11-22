@@ -176,6 +176,9 @@ button.trenner:hover span,button.trenner:focus-visible span{color:var(--acc);out
 .info-list details:first-child{border-top:0}
 .info-list summary{cursor:pointer;font-weight:600;min-height:32px;display:flex;align-items:center}
 .info-list p{margin:.35rem 0 .2rem;color:var(--muted)}
+.info-list dl{margin:.3rem 0 .3rem}
+.info-list dt{font-weight:600;margin:.65rem 0 .1rem;font-size:.95rem}
+.info-list dd{margin:0;color:var(--muted)}
 .lk-notizen{display:grid;gap:.5rem;margin-bottom:.6rem}
 .lk-notizen div{background:var(--sheet);border-radius:10px;padding:.5rem .7rem}
 .lk-notizen > div > b{display:block;font-size:.8rem;color:var(--lk)}
@@ -195,7 +198,9 @@ button.trenner:hover span,button.trenner:focus-visible span{color:var(--acc);out
 /* Verschieben per Ziehen (Griff bei Fach/Reihe/Vorhaben, Material-Chip direkt; am iPad kurz gedrückt halten) */
 .iconbtn.grip{cursor:grab;touch-action:none}
 .editing [data-sort=m] > [data-sort-item]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
-.editing [data-sort=m] > .chip[data-sort-item],.editing [data-sort=m] > .mwrap > .chip{cursor:grab}
+.editing [data-sort=m] > .chip[data-sort-item]{cursor:grab}
+.mwrap .iconbtn.pen{width:36px;height:36px;color:var(--muted)}
+.mwrap .iconbtn.pen:hover{color:inherit}
 body.sorting,body.sorting *{cursor:grabbing !important;-webkit-user-select:none;user-select:none}
 .dragging{position:relative;z-index:20;pointer-events:none;box-shadow:0 10px 28px rgba(0,0,0,.22);border-radius:14px;background:var(--sheet);opacity:.96;transition:none !important}
 .rows:has(.dragging){overflow:visible}
@@ -345,7 +350,15 @@ footer a{display:inline-flex;align-items:center;gap:.35rem;color:var(--muted);te
 .auswahl-bar b{margin-right:.4rem}
 .auswahl-bar .pillbtn.danger{color:var(--danger)}
 .chip.gewaehlt{outline:3px solid var(--acc);outline-offset:2px;background:color-mix(in srgb, var(--acc) 12%, var(--sheet))}
-.auswahl .chip[data-act=edit-m]{cursor:pointer}
+.auswahl [data-sort=m] > .mwrap > .chip{cursor:pointer}
+.plan-box{margin:1.4rem 0 0;border:1.5px dashed color-mix(in srgb, var(--lk) 55%, transparent);border-radius:14px;padding:.7rem .9rem .9rem;background:color-mix(in srgb, var(--lk) 5%, transparent)}
+.plan-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.plan-head .lbl{color:var(--lk);font-weight:700;font-size:.85rem}
+.plan-body h4{margin:.7rem 0 .25rem;font-size:.95rem;color:var(--lk)}
+.plan-body .fmt{margin:.2rem 0}
+.plan-todo{display:flex;align-items:flex-start;gap:.55rem;padding:.25rem 0;cursor:pointer;min-height:34px}
+.plan-todo input{width:20px;height:20px;margin:.12rem 0 0;accent-color:var(--lk);flex:none}
+.plan-todo.fertig span{text-decoration:line-through;color:var(--muted)}
 .popmenu{position:absolute;z-index:60;min-width:230px;background:var(--sheet);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:.35rem;display:grid}
 .popmenu button{display:flex;align-items:center;gap:.6rem;padding:.65rem .75rem;border:0;background:transparent;border-radius:10px;font:inherit;color:inherit;text-align:left;cursor:pointer;min-height:44px}
 .popmenu button:hover,.popmenu button:focus-visible{background:var(--hover, rgba(0,0,0,.06))}
@@ -554,6 +567,7 @@ var I = {
   nw:'<path d="M9.5 3h5M10.5 3v5.5L5.2 18.3A1.8 1.8 0 0 0 6.8 21h10.4a1.8 1.8 0 0 0 1.6-2.7L13.5 8.5V3"/><path d="M12 19v-3.5"/><path d="M12 16.5c-1.9 0-3-1-3-2.6 1.8 0 3 .9 3 2.6z"/><path d="M12 15.5c0-1.9 1.2-3.1 3.2-3.1 0 1.9-1.3 3.1-3.2 3.1z"/>',
   klasse:'<circle cx="9" cy="8" r="3"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.3c.5-.2 1-.3 1.5-.3 2.2 0 3.9 1.5 4.4 4"/>',
   klp:'<path d="M9 4h6v3H9z"/><path d="M7 5H5v16h14V5h-2"/><path d="M8.5 12l2 2 4-4"/>',
+  notiz:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v2M15 3v2M8.5 9.5h7M8.5 13h7M8.5 16.5h4"/>',
   mehr:'<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
   voll:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
   kopie:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
@@ -622,7 +636,10 @@ var cfg = loadJSON(CFG_KEY) || {};
 var zugang = null, zugangSha = null;
 var keyB = null, dekB = null, keyP = null, dekP = null;
 var data = null, dataSha = null, editing = false, freshForAdmin = false;
-var lkOpen = loadJSON(LK_KEY) || {};
+/* Lehrkraft-Bereich: in der normalen Ansicht zugeklappt, einzeln aufklappbar (nur bis „Fertig“ bzw. Neuladen);
+   im Bearbeiten-Modus immer offen */
+var lkAuf = {};
+try{ localStorage.removeItem(LK_KEY); localStorage.removeItem('um-lk-offen'); }catch(e){}
 function loadJSON(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
 function saveJSON(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 function canEdit(){ return !!(cfg.token && cfg.owner && cfg.repo); }
@@ -1073,12 +1090,13 @@ function matChip(m, ref, mode, k){
     : (zu ? '<span class="ab" title="für SuS sichtbar ab ' + esc(datumKurz(z.ab)) + '">ab ' + esc(datumKurz(z.ab)) + '</span>' : '');
   badge = nivBadge(m) + badge;
   if(editing && mode !== 'kurs'){
-    var ext = m.typ === 'buch' ? (m.text ? 'Hinweis' : '') : m.datei ? (m.datei.ext || '').toUpperCase() : (m.url ? 'Link' : '');
-    var chip = '<button class="chip t-' + m.typ + (cls ? ' ' + cls : '') + '" data-act="edit-m" ' + ref + (lk ? ' data-sort-item' : '') + '>' + ico(m.typ === 'pruefung' ? 'lock' : m.typ)
-      + '<span>' + esc(m.titel) + '</span>' + badge + (ext ? '<span class="ext">' + esc(ext) + '</span>' : '') + '</button>';
-    if(lk) return chip;
+    /* Bearbeiten-Modus: Antippen öffnet das Material wie sonst, der Stift öffnet „Material bearbeiten“; ziehen am Chip */
+    var echip = m.typ === 'buch' ? chipBuch(m, ref, cls, badge) : m.datei ? chipFile(m.datei, m.titel, m.typ, ref + ' data-slot="datei"', cls, badge) : m.url ? chipLink(m.url, m.titel, m.typ, cls, badge)
+      : '<span class="chip t-' + m.typ + (cls ? ' ' + cls : '') + '">' + ico(m.typ) + '<span>' + esc(m.titel) + '</span>' + badge + '</span>';
+    var pen = '<button class="iconbtn pen" data-act="edit-m" ' + ref + ' aria-label="„' + esc(m.titel) + '“ bearbeiten" title="Bearbeiten">' + ico('edit') + '</button>';
+    if(lk) return '<span class="mwrap" data-sort-item ' + ref + '>' + echip + pen + '</span>';
     var lbl = (z.ausgeblendet ? 'Für SuS einblenden' : 'Für SuS ausblenden') + (k ? ' (' + k.name + ')' : '');
-    return '<span class="mwrap" data-sort-item ' + ref + '>' + chip + '<button class="iconbtn" data-act="vis-m" ' + ref + ' aria-label="' + esc(lbl) + '" title="' + esc(lbl) + '">' + ico(z.ausgeblendet ? 'eyeoff' : 'eye') + '</button></span>';
+    return '<span class="mwrap" data-sort-item ' + ref + '>' + echip + pen + '<button class="iconbtn" data-act="vis-m" ' + ref + ' aria-label="' + esc(lbl) + '" title="' + esc(lbl) + '">' + ico(z.ausgeblendet ? 'eyeoff' : 'eye') + '</button></span>';
   }
   var out = m.typ === 'buch' ? chipBuch(m, ref, cls, badge) : m.datei ? chipFile(m.datei, m.titel, m.typ, ref + ' data-slot="datei"', cls, badge) : m.url ? chipLink(m.url, m.titel, m.typ, cls, badge) : '';
   /* Lehrkraft (auch ohne Bearbeiten-Modus): kleines Auge zum Ein-/Ausblenden */
@@ -1095,11 +1113,11 @@ function joinItems(a){ return a.map(function(x, i){ return x.charAt(0) === '\n' 
 function lkEditBlock(chips, vid, notizen){
   return '<div class="lk-area edit"><span class="lbl">Lehrkraft-Bereich · für SuS nie sichtbar</span>' + (notizen || '') + '<div class="chips" data-sort="m" data-bereich="lk" ' + vid + '>' + chips.join('')
     + '<button class="chip add lkchip" data-act="add-m" data-bereich="lk" ' + vid + '>' + ico('plus') + '<span>Lehrkraft-Material</span></button>'
-    + '<button class="chip add lkchip" data-act="notiz-v" ' + vid + '>' + ico('edit') + '<span>Notizen</span></button></div></div>';
+    + '<button class="chip add lkchip" data-act="notiz-v" ' + vid + '>' + ico('notiz') + '<span>Notizen</span></button></div></div>';
 }
 function lkBlock(key, chips, notizen){
   if(!chips.length && !notizen) return '';
-  var open = !lkOpen[key];   // lkOpen = zugeklappte Bereiche
+  var open = !!lkAuf[key];
   var lbl = chips.length ? 'Lehrkraft-Material (' + chips.length + ')' + (notizen ? ' · Notizen' : '') : 'Notizen';
   return '<button class="lk-toggle" data-lk="' + esc(key) + '" aria-expanded="' + open + '">' + ico('next') + lbl + '</button>'
     + '<div class="lk-area"' + (open ? '' : ' hidden') + '>' + (notizen || '') + (chips.length ? '<div class="chips">' + chips.join('') + '</div>' : '') + '</div>';
@@ -1333,8 +1351,7 @@ function renderReihe(f, j, r, mode, kk){
   var kids = k ? ids + ' data-k="' + esc(k.id) + '"' : ids;
   var html = '<div class="acc-' + esc(f.farbe || 'blau') + '">' + (kurs ? '' : crumbs([[f.name + ' ' + j.name, base], [r.titel, base + '/' + encodeURIComponent(r.id)]]))
     + '<div class="page-head"><h1>' + esc(r.titel) + '</h1>' + (kurs ? '<span class="pill" data-kurs-pill>' + esc(f.name + ' ' + (k ? k.name : j.name)) + '</span>' : tools('r', ids, {noMove:true}))
-    + (kurs ? '' : '<span class="spacer"></span><a class="pillbtn" id="sus-ansicht" href="#/kurs/' + [f.id, j.id, r.id].concat(k ? [k.id] : []).map(encodeURIComponent).join('/') + '" title="Zeigt nur, was SuS sehen – z. B. zum Spiegeln im Unterricht">' + ico('eye') + '<span class="lbl">SuS-Ansicht</span></a>'
-      + '<button class="pillbtn" data-act="share-r" ' + kids + '>' + ico('qr') + '<span class="lbl">' + (k ? 'Mit ' + esc(k.name) + ' teilen' : 'Mit Kurs teilen') + '</span></button>')
+    + (kurs ? '' : '<span class="spacer"></span><button class="pillbtn" data-act="share-r" ' + kids + '>' + ico('qr') + '<span class="lbl">' + (k ? 'Mit ' + esc(k.name) + ' teilen' : 'Mit Kurs teilen') + '</span></button>')
     + (r.inhaltsfeld ? '<span class="sub">' + esc(r.inhaltsfeld) + '</span>' : '') + '</div>';
   if(!kurs) html += kursLeiste(r, k, ids);
   html += hinweisSection(r, mode, ids, k);
@@ -1376,8 +1393,8 @@ function renderReihe(f, j, r, mode, kk){
   });
   if(!shown) html += '<div class="row empty">' + (kurs ? 'Hier gibt es noch nichts zu sehen.' : 'Noch keine Unterrichtsvorhaben.') + '</div>';
   html += (kurs ? '' : '<button class="addbtn add-row edit-only" data-act="add-v" ' + ids + '>' + ico('plus') + 'Unterrichtsvorhaben</button>') + '</div>';
-  if(!kurs) html += '<div class="btnline edit-only"><button class="addbtn" data-act="auswahl-an" ' + ids + ' title="Mehrere Materialien markieren (am Laptop auch Strg + Klick)">' + ico('checklist') + 'Auswählen</button>'
-    + '<button class="addbtn" data-act="sync-r" ' + ids + '>' + ico('importi') + 'Ordner hochladen</button>'
+  if(!kurs) html += planBox(r, ids);
+  if(!kurs) html += '<div class="btnline edit-only">'
     + (kurseOf(r).length ? '' : '<button class="addbtn" data-act="add-k" ' + ids + '>' + ico('plus') + 'Parallelkurs anlegen</button>')
     + '<button class="addbtn" data-act="neu-r" ' + ids + '>' + ico('klp') + 'Neues Schuljahr</button></div>';
   var dl = susItems(r, k), dlMb = dl.reduce(function(s, x){ return s + (x.m.datei ? +x.m.datei.mb || 0 : 0); }, 0);
@@ -1422,7 +1439,7 @@ function suchErgebnisse(q){
       });
       if(ms.length || hit(vTxt)) vHits.push({ v:v, vi:vi, ms:ms });
     });
-    if(vHits.length || hit(rTxt)) out.push(Object.assign(base, { vHits:vHits }));
+    if(vHits.length || hit(rTxt) || (r.plan && hit(rTxt + ' ' + r.plan))) out.push(Object.assign(base, { vHits:vHits }));
   }); }); });
   return out;
 }
@@ -1467,39 +1484,51 @@ function wireSuche(){
   setTimeout(function(){ inp.focus(); }, 30);
 }
 /* Einstellungen in Kategorien: #/einstellungen/info|zugang|verwaltung|speicher */
+/* Info: wenige aufklappbare Gruppen mit kurzen Fragen und Antworten – für alle, die etwas nachlesen wollen */
 var INFO = [
-  // [Titel, Text, nur Lehrkraft?]
-  ['Mit Kurs teilen', 'Link oder QR-Code zeigt nur diese Reihe – ohne Ausgeblendetes und ohne Lehrkraft-Material. Der Zugangscode wird trotzdem gebraucht. Zurück zur ganzen Sammlung: 5× auf das Fach-Schild tippen.', false],
-  ['Checkliste', 'Antippen: 1× noch unsicher, 2× kann ich sicher. Die Einschätzung bleibt nur auf diesem Gerät.', false],
-  ['Niveau', '★ Basis · ★★ Standard · ★★★ Erweiterung', false],
-  ['Bearbeiten', 'Unterrichtsmaterial sehen SuS, Lehrkraft-Material nie. Klassenarbeit, Test und Klausur werden zusätzlich mit dem Prüfungspasswort geschützt.', true],
-  ['Reihenfolge ändern', 'Im Bearbeiten-Modus Fächer, Reihen und Vorhaben am Griff (⠿) an die neue Stelle ziehen. Material: Chip ziehen – am iPad kurz gedrückt halten, dann ziehen. Material lässt sich auch in ein anderes Vorhaben oder zwischen Lehrkraft- und Unterrichtsmaterial schieben (mit Rückfrage, Klassenarbeiten bleiben beim Lehrkraft-Material).', true],
-  ['Mehrere Tage', 'Im Bearbeiten-Modus „+ Tag“ antippen: Ein Trenner teilt das Unterrichtsmaterial eines Vorhabens nach Tagen. Antippen ändert die Beschriftung, ziehen verschiebt ihn. SuS sehen den Trenner nur, wenn danach Material sichtbar ist.', true],
-  ['Buchaufgabe', 'Material ohne Datei: Der Titel (z. B. „S. 112 Nr. 4 a–c“) ist direkt sichtbar. Ein optionaler Hinweis öffnet sich beim Antippen – SuS erkennen das an „Hinweis ›“. Keine Scans aus Schulbüchern hochladen.', true],
-  ['Text formatieren', 'In Hinweisen, Notizen und Buchaufgaben: **fett**, *kursiv*, Zeilen mit „- “ werden zur Liste, Links sind antippbar.', true],
-  ['SuS-Ansicht', 'Zeigt die Reihe so, wie SuS sie sehen – ohne Lehrkraft-Material, Notizen und Ausgeblendetes. Gut zum Spiegeln im Unterricht. Zurück über „Lehrkraft-Ansicht“.', true],
-  ['Ausblenden und Freischalten', 'Das Auge blendet aus. „Sichtbar ab“ schaltet an einem Tag automatisch frei, z. B. Lösungen nach der Stunde. Das Datum kommt vom Gerät der SuS – Planungshilfe, kein Schutz.', true],
-  ['Parallelkurse', 'Jeder Kurs hat eigene Freischaltungen, einen eigenen Hinweis und Link. „Standard“ gilt für den allgemeinen Link und für alles, was ein Kurs nicht selbst festlegt. Neue Einträge übernehmen den Standard.', true],
-  ['Notizen', 'Schwerpunktziel, Verlaufsplan und Reflexion pro Vorhaben – nur in der Lehrkraft-Ansicht. Keine Schülernamen eintragen.', true],
-  ['Suche', 'Durchsucht alle Fächer und Jahrgänge, auch Dateinamen, Hinweise, Checklisten und Notizen. Umlaute können weggelassen werden.', true],
-  ['Ordner hochladen', 'Fach und Jahrgang aus Ordnernamen wie „2526 M 6“, Reihe = Ordner, Nummer im Dateinamen = Vorhaben. PDF und Word mit gleichem Namen: PDF für SuS, Word für Lehrkräfte. Erneut ausführen gleicht ab; am Laptop Gelöschtes bleibt hier.', true],
-  ['Ein- und ausblenden', 'Das Auge an Vorhaben und Material geht auch ohne Bearbeiten-Modus. „⋯“ an einem Vorhaben: „Bis hier freischalten“ (alle Vorhaben bis dahin) oder „Als heute markieren“ (gilt nur heute).', true],
-  ['Aktuelle Einheit', 'Das letzte für SuS sichtbare Vorhaben ist leicht hervorgehoben – in der Kursansicht springt die Seite dorthin. Ist alles freigeschaltet, wird nichts hervorgehoben. „Als heute markieren“ hat Vorrang.', false],
-  ['QR-Code zum Material', 'Material öffnen → „QR“: Neben dem Material erscheinen ein QR-Code direkt zu diesem Material (für den gewählten Kurs) und ein Feld für den Arbeitsauftrag. Der Arbeitsauftrag wird nicht gespeichert. Vollbild mit „F“, Pfeiltasten → nächstes/vorheriges Material.', true],
-  ['Tafelbild', 'Art „Tafelbild (Foto)“ im Material-Dialog: Am iPad öffnet sich direkt die Kamera, der Titel bekommt das Datum.', true],
-  ['Material kopieren', 'Material bearbeiten → Ort ändern → „Als Kopie dort anlegen“. Die Datei wird nicht doppelt gespeichert.', true],
-  ['Mehrere Materialien', 'Bearbeiten → „Auswählen“ (am Laptop: Strg + Klick) → markierte Materialien zusammen ein-/ausblenden, verschieben oder löschen.', true],
-  ['Tastenkürzel', 'Am Laptop: E = Bearbeiten, / = Suche, N = neues Material im Vorhaben unter der Maus, Esc = Auswahl beenden.', true],
-  ['Papierkorb', 'Gelöschtes Material landet im Papierkorb (Einstellungen → Speicher) und lässt sich 30 Tage lang wiederherstellen. Danach wird es endgültig gelöscht – oder vorher über „Papierkorb leeren“.', true],
-  ['Einfügen (Strg+V)', 'Am Laptop Dateien aus dem Explorer oder Screenshots kopieren und einfügen: Maus über ein Vorhaben → Datei kommt direkt dorthin. Sonst öffnet sich das Fenster zum Zuordnen. Text wird zur Notiz. In einem offenen Dialog füllt Strg+V das Datei-Feld. Im Material-Dialog: Enter speichert, Entf löscht.', true],
-  ['Datei ersetzen', 'Neue Datei mit gleichem Dateinamen hochladen – Titel, Sichtbarkeit und Kurse bleiben. Oder Material antippen und unter „Datei“ eine neue wählen.', true],
-  ['Speichern', 'Änderungen erscheinen sofort, gespeichert wird im Hintergrund („Speichert …“ unten links). Seite erst danach schließen. SuS sehen den neuen Stand nach ca. 1–2 Minuten.', true],
-  ['Sichern und Wiederherstellen', '„Alles herunterladen“ (mit Prüfungspasswort) ist die Sicherung. Wiederherstellen: „Importieren“ → „Alles ersetzen“.', true],
-  ['Neues Schuljahr', 'In Reihe oder Jahrgang: zurücksetzen oder als Kopie anlegen. Kopien nutzen dieselben Dateien.', true],
-  ['Titelbild', 'Antippen vergrößert. Optional mit HTML-Seite oder Link, z. B. Advance Organizer: Dann zeigt das Bild „Interaktiv öffnen“. Ohne Bild erscheint nur der Knopf. In der Seite öffnen Links „um:material:Titel“ Material der Reihe.', true],
-  ['Interaktive Seiten', 'Vorlagen unter Verwaltung: Lernpfad (Schritte, Hilfen, Quiz) oder Simulation (ein Bildschirm). Anpassen und als HTML hochladen.', true],
-  ['Speicher', 'Höchstens 1 GB. Ersetzte und gelöschte Dateien bleiben im Verlauf und zählen mit. Videos verlinken. Wird es eng: ein Fach in eine eigene Sammlung auslagern (Fach bearbeiten → Adresse).', true],
-  ['Sicherheit', 'Alles liegt verschlüsselt im Repository. Der Zugangscode ist eine Hürde, kein Tresor – Klassenarbeiten deshalb mit langem Prüfungspasswort schützen.', true]
+  { titel:'Für Schülerinnen und Schüler', offen:true, eintraege:[
+    ['Wie komme ich zum Material?', 'Über den Link oder QR-Code deiner Lehrkraft. Beim ersten Mal den Zugangscode eingeben – danach merkt sich das Gerät ihn.'],
+    ['Wie speichere ich eine Datei?', 'Material öffnen → „Teilen“ (iPad) bzw. „Speichern“ (Laptop). „Alle Materialien herunterladen“ unten in der Reihe lädt alles auf einmal.'],
+    ['Was bedeuten die Sterne?', '★ Basis · ★★ Standard · ★★★ Erweiterung.'],
+    ['Checkliste', 'Aussage antippen: 1× noch unsicher (gelb), 2× kann ich sicher (grün). Die Einschätzung bleibt nur auf deinem Gerät.'],
+    ['Ich sehe zu wenig / zu viel', 'Du siehst nur, was für deinen Kurs freigeschaltet ist. Die markierte Einheit ist die aktuelle. Zur ganzen Sammlung (nur Lehrkräfte): 5× auf das Fach-Schild oben tippen.']
+  ]},
+  { titel:'Was ist das? Wer sieht was?', eintraege:[
+    ['Grundidee', 'Eine Sammlung von Unterrichtsmaterial nach Fach → Jahrgang → Reihe → Unterrichtsvorhaben. Die Lehrkraft bearbeitet, SuS sehen nur Freigeschaltetes. Ohne Konto, ohne Schülerdaten, offline nutzbar.'],
+    ['Unterrichtsmaterial und Lehrkraft-Material', 'Unterrichtsmaterial sehen SuS, sobald es freigeschaltet ist. Lehrkraft-Material, Notizen und Planung sehen SuS nie – in der normalen Ansicht sind sie zugeklappt.'],
+    ['Zugangscode und Prüfungspasswort', 'Alles liegt verschlüsselt im Repository. Der Zugangscode öffnet die Sammlung, Klassenarbeiten/Tests/Klausuren brauchen zusätzlich das Prüfungspasswort. Der Code ist eine Hürde, kein Tresor: keine Schülernamen oder Vertrauliches in Notizen und Planung.'],
+    ['Bearbeiten', 'Nur mit GitHub-Schlüssel (Einstellungen → Zugang). Oben „Bearbeiten“ (Laptop: Taste E), fertig mit „Fertig“.']
+  ]},
+  { titel:'Material anlegen', eintraege:[
+    ['Einzelnes Material', '„+“ am Unterrichtsvorhaben oder oben „+ Material“. Arten: Material (PDF, Word, Bild, HTML, Link …), Tafelbild (am iPad öffnet sich die Kamera), Lösung, Klassenarbeit/Test/Klausur, Buchaufgabe (nur Text, z. B. „S. 112 Nr. 4“). Im Dialog: Enter speichert, Entf löscht.'],
+    ['Ganzer Ordner', 'Oben „+ Material“ → „Ordner oder mehrere Dateien“ (auch ZIP). Fach und Jahrgang aus Ordnernamen wie „2526 M 6“, Reihe = Ordner, Nummer im Dateinamen = Vorhaben. Aus „P9 Stromkreis - 3 Blitz-Check.pdf“ wird Vorhaben 3, Titel „Blitz-Check“. Im Fenster lässt sich jede Datei einem Vorhaben zuordnen.'],
+    ['Einfügen mit Strg+V', 'Dateien aus dem Explorer oder Screenshots kopieren und einfügen: Maus über einem Vorhaben → direkt dorthin, sonst Fenster zum Zuordnen. Text wird zur Notiz, über der Planung zur Planung. In einem offenen Dialog füllt Strg+V das Datei-Feld.'],
+    ['Ändern, ersetzen, kopieren', 'Im Bearbeiten-Modus öffnet Antippen das Material, der Stift daneben die Einstellungen. Neue Datei mit gleichem Namen ersetzt die alte (Titel, Sichtbarkeit bleiben). Ort ändern + „Als Kopie dort anlegen“ kopiert in eine andere Reihe – ohne die Datei doppelt zu speichern.'],
+    ['Ordnen', 'Im Bearbeiten-Modus Vorhaben am Griff ⠿ ziehen, Material am Chip ziehen (iPad: kurz halten) – auch in ein anderes Vorhaben oder zwischen Unterrichts- und Lehrkraft-Material. „+ Tag“ fügt einen Trenner für Vorhaben über mehrere Tage ein. Strg + Klick markiert mehrere Materialien zum gemeinsamen Ein-/Ausblenden, Verschieben oder Löschen.'],
+    ['Titelbild und Advance Organizer', 'Titelbild oben in der Reihe, antippen vergrößert. Optional eine HTML-Seite oder ein Link dazu (z. B. Advance Organizer) → „Interaktiv öffnen“. Links „um:material:Titel“ in HTML-Seiten öffnen Material der Reihe.'],
+    ['Interaktive HTML-Seiten', 'Vorlagen unter Einstellungen → Verwaltung: Lernpfad (Schritte, Hilfen, Quiz) oder Simulation (ein Bildschirm). Ohne externe Schriften und Skripte.'],
+    ['Text formatieren', 'In Hinweisen, Notizen, Planung und Buchaufgaben: **fett**, *kursiv*, Zeilen mit „- “ = Liste, Links werden antippbar.']
+  ]},
+  { titel:'Im Unterricht', eintraege:[
+    ['Freischalten', 'Das Auge an Vorhaben und Material blendet ein/aus – auch ohne Bearbeiten-Modus. „⋯“ am Vorhaben: „Bis hier freischalten“. „Sichtbar ab“ (im Material-Dialog) schaltet an einem Tag automatisch frei, z. B. Lösungen.'],
+    ['Aktuelle Einheit', 'Das letzte freigeschaltete Vorhaben ist leicht hervorgehoben; die Kursansicht springt dorthin. „⋯“ → „Als heute markieren“ hat für diesen Tag Vorrang.'],
+    ['Mit Kurs teilen', 'Oben „Mit Kurs teilen“: Link und QR-Code nur zu dieser Reihe (ohne Ausgeblendetes und Lehrkraft-Material). Dort auch „SuS-Ansicht öffnen“ – z. B. zum Spiegeln am Beamer.'],
+    ['QR-Code zu einem Material', 'Material öffnen → „QR“: QR-Code direkt zu diesem Material und ein großes Feld für den Arbeitsauftrag (wird nicht gespeichert). Vollbild mit F, Pfeiltasten → nächstes/vorheriges Material.'],
+    ['Parallelkurse', 'Eine Reihe für mehrere Kurse: jeder Kurs mit eigener Freischaltung, eigenem Hinweis und Link. Oben „Freischalten für“ wählt den Kurs.'],
+    ['Hinweis-Banner', 'Gelber Hinweis oben in der Reihe (z. B. „Test am Freitag“) mit Ablaufdatum – für alle oder nur einen Kurs.']
+  ]},
+  { titel:'Planen', eintraege:[
+    ['Notizen pro Vorhaben', 'Schwerpunktziel, Verlaufsplan und Reflexion („Was lief gut?“) – im Lehrkraft-Bereich des Vorhabens. Vorhaben für spätere Stunden einfach ausgeblendet anlegen.'],
+    ['Planung pro Reihe', 'Lila Kasten unten in der Reihe: To-dos für die nächsten Wochen („[ ] …“ wird zum Kästchen) und Ideen für den nächsten Durchgang („# Nächstes Mal“). Nur für die Lehrkraft.'],
+    ['Neues Schuljahr', 'In Reihe oder Jahrgang: zurücksetzen (ausblenden, Termine/Hinweise löschen, erledigte To-dos entfernen) oder als Kopie anlegen. Material, Notizen und Planung bleiben.'],
+    ['Suche', 'Lupe oben (Laptop: Taste /): durchsucht alle Fächer, auch Dateinamen, Hinweise, Notizen und Planung.']
+  ]},
+  { titel:'Speichern, Sichern, Papierkorb', eintraege:[
+    ['Speichern', 'Änderungen erscheinen sofort, gespeichert wird im Hintergrund („Speichert …“ unten links). Für alle sichtbar nach ca. 1–2 Minuten.'],
+    ['Papierkorb', 'Gelöschtes Material ist 30 Tage wiederherstellbar (Einstellungen → Speicher), direkt danach auch über „Rückgängig“.'],
+    ['Sichern und weitergeben', '„Alles herunterladen“ (Einstellungen → Verwaltung, mit Prüfungspasswort) ist die Sicherung – Dateien mit Originalnamen, dazu eine Übersicht. Wiederherstellen oder an andere Lehrkräfte weitergeben: „Importieren“.'],
+    ['Speicherplatz', 'Höchstens ca. 1 GB. Ersetzte und gelöschte Dateien bleiben im Verlauf und zählen mit. Videos verlinken statt hochladen.']
+  ]}
 ];
 function settingsTabs(){
   var t = [['info', 'Info'], ['zugang', 'Zugang']];
@@ -1514,9 +1543,9 @@ function renderSettings(tab){
   var html = crumbs([['Einstellungen', '#/einstellungen']]) + '<div class="page-head"><h1>Einstellungen</h1></div>'
     + '<nav class="tabs" role="tablist">' + tabs.map(function(x){ return '<a href="#/einstellungen/' + x[0] + '" role="tab" data-tab="' + x[0] + '"' + (x[0] === tab ? ' class="on" aria-selected="true"' : '') + '>' + x[1] + '</a>'; }).join('') + '</nav>';
   if(tab === 'info'){
-    var lk = canEdit();
-    html += '<section class="panel info-list">' + INFO.filter(function(x){ return lk || !x[2]; }).map(function(x){
-      return '<details><summary>' + esc(x[0]) + '</summary><p>' + esc(x[1]) + '</p></details>'; }).join('') + '</section>';
+    html += '<section class="panel info-list">' + INFO.map(function(g){
+      return '<details' + (g.offen && !canEdit() ? ' open' : '') + '><summary>' + esc(g.titel) + '</summary><dl>'
+        + g.eintraege.map(function(x){ return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl></details>'; }).join('') + '</section>';
   }
   if(tab === 'zugang'){
     if(loadJSON(KURS_KEY)) html += '<section class="panel"><h2>Kursansicht</h2><button class="btn" data-act="leave-kurs">Kursansicht auf diesem Gerät beenden</button></section>';
@@ -2205,8 +2234,55 @@ function materialForm(loc, m, bereich, k){
     }
   });
 }
+/* ---------- Planung pro Reihe (nur Lehrkraft): reihe.plan = Text
+   „[ ] …“ = To-do (abhaken), „[x] …“ = erledigt, „# …“ = Überschrift, sonst Text wie in Notizen ---------- */
+var PLAN_TODO = /^\s*\[( |x|X)\]\s?(.*)$/;
+function planHtml(text){
+  var out = '', buf = [];
+  function flush(){ if(buf.length){ out += '<div class="fmt">' + fmt(buf.join('\n')) + '</div>'; buf = []; } }
+  String(text || '').split('\n').forEach(function(line, i){
+    var t = PLAN_TODO.exec(line), h = /^\s*#\s+(.*)$/.exec(line);
+    if(t){ flush(); var fertig = t[1] !== ' ';
+      out += '<label class="plan-todo' + (fertig ? ' fertig' : '') + '"><input type="checkbox" data-plan-i="' + i + '"' + (fertig ? ' checked' : '') + '><span>' + fmtInline(t[2]) + '</span></label>'; }
+    else if(h){ flush(); out += '<h4>' + esc(h[1]) + '</h4>'; }
+    else buf.push(line);
+  });
+  flush();
+  return out;
+}
+function planOffen(r){ return String(r.plan || '').split('\n').filter(function(l){ var t = PLAN_TODO.exec(l); return t && t[1] === ' '; }).length; }
+function planBox(r, ids){
+  if(!canEdit()) return '';
+  if(!String(r.plan || '').trim()) return '<div class="edit-only" style="margin:1rem 0 0"><button class="addbtn" data-act="edit-plan" ' + ids + '>' + ico('notiz') + 'Planung für mich</button></div>';
+  var n = planOffen(r);
+  return '<section class="plan-box" ' + ids + ' aria-label="Planung"><div class="plan-head"><span class="lbl">Planung · nur für dich' + (n ? ' · ' + n + ' offen' : '') + '</span>'
+    + '<button class="iconbtn" data-act="edit-plan" ' + ids + ' aria-label="Planung bearbeiten" title="Planung bearbeiten">' + ico('edit') + '</button></div>'
+    + '<div class="plan-body">' + planHtml(r.plan) + '</div></section>';
+}
+function planAnhaengen(r, text, msg){
+  return commit(msg || ('Planung: ' + r.titel), function(){ var alt = String(r.plan || '').replace(/\s+$/, ''); r.plan = alt ? alt + '\n' + text : text; });
+}
+document.addEventListener('change', function(e){
+  var cb = e.target; if(!cb.matches || !cb.matches('input[data-plan-i]')) return;
+  var box = cb.closest('.plan-box'), i = +cb.dataset.planI, an = cb.checked;
+  ensureFresh().then(function(){
+    var c = ctx(box); if(!c.r) return;
+    commit((an ? 'Erledigt' : 'Wieder offen') + ': Planung ' + c.r.titel, function(){
+      var ls = String(c.r.plan || '').split('\n'); if(!PLAN_TODO.test(ls[i] || '')) return;
+      ls[i] = ls[i].replace(/\[( |x|X)\]/, an ? '[x]' : '[ ]'); c.r.plan = ls.join('\n');
+    });
+  }).catch(fail);
+});
+
 /* ---------- Mehrfachauswahl (Bearbeiten-Modus, aktuelle Reihe) ---------- */
 var auswahl = null;   // { Material-ID: 1 } oder null
+/* Strg/⌘/Umschalt + Klick auf ein Material im Bearbeiten-Modus = markieren (statt öffnen); in der Auswahl reicht Antippen */
+document.addEventListener('click', function(e){
+  if(!editing || !(auswahl || e.ctrlKey || e.metaKey || e.shiftKey)) return;
+  var w = e.target.closest && e.target.closest('[data-sort=m] > .mwrap[data-m]');
+  if(!w || e.target.closest('.iconbtn')) return;
+  e.preventDefault(); e.stopPropagation(); auswahlToggle(w.dataset.m);
+}, true);
 function auswahlToggle(mid){ auswahl = auswahl || {}; if(auswahl[mid]) delete auswahl[mid]; else auswahl[mid] = 1; auswahlZeigen(); }
 function auswahlEnde(){ auswahl = null; auswahlZeigen(); }
 function auswahlReihe(){ var p = hashParts(); if(p[0] !== 'f' || !p[3]) return null; var f = findIn(data.faecher, p[1]), j = f && findIn(f.jahrgaenge, p[2]), r = j && findIn(j.reihen, p[3]); return r ? { f:f, j:j, r:r } : null; }
@@ -2219,7 +2295,7 @@ function auswahlZeigen(){
   var bar = $('#auswahl-bar');
   if(auswahl && (!editing || !auswahlReihe())) auswahl = null;
   document.body.classList.toggle('auswahl', !!auswahl);
-  Array.prototype.forEach.call(document.querySelectorAll('[data-act=edit-m][data-m]'), function(el){ el.classList.toggle('gewaehlt', !!(auswahl && auswahl[el.dataset.m])); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-sort=m] > .mwrap[data-m] > .chip'), function(el){ el.classList.toggle('gewaehlt', !!(auswahl && auswahl[el.parentNode.dataset.m])); });
   if(!auswahl){ if(bar) bar.remove(); return; }
   if(!bar){ bar = document.createElement('div'); bar.id = 'auswahl-bar'; bar.className = 'auswahl-bar'; document.body.appendChild(bar);
     bar.addEventListener('click', function(e){ var q = e.target.closest('[data-a]'); if(q) auswahlAktion(q.dataset.a); }); }
@@ -2277,7 +2353,7 @@ document.addEventListener('keydown', function(e){
   else if(e.key === 'n' || e.key === 'N'){
     e.preventDefault();
     var row = zeigerEl && document.contains(zeigerEl) && zeigerEl.closest ? zeigerEl.closest('.row[data-v]') : null, b = row && row.querySelector('[data-act=add-m][data-bereich=sus]');
-    if(b){ var cx = ctx(b); cx._el = b; actions['add-m'](cx); } else $('#add-material').click();
+    if(b){ var cx = ctx(b); cx._el = b; actions['add-m'](cx); } else neuesMaterialHier();
   }
 });
 
@@ -2545,6 +2621,7 @@ function zuruecksetzen(r, o){
     });
   });
   if(o.hinweis){ delete r.hinweis; ks.forEach(function(k){ delete k.hinweis; }); }
+  if(o.plan && r.plan){ r.plan = r.plan.split('\n').filter(function(l){ var t = PLAN_TODO.exec(l); return !(t && t[1] !== ' '); }).join('\n').replace(/\s+$/, ''); if(!r.plan) delete r.plan; }
 }
 /* Kopie einer Reihe: neue IDs, dieselben Dateien (nichts wird doppelt hochgeladen) */
 function kopiereReihe(r, zj){
@@ -2559,7 +2636,7 @@ function neuesSchuljahr(f, j, r){
   if(r) activeFaecher().forEach(function(F){ (F.jahrgaenge || []).forEach(function(J){ ziele.push([F.id + '|' + J.id, 'Kopie anlegen in ' + F.name + ' ' + J.name + (J === j ? ' (hier)' : '')]); }); });
   var hatKurse = r ? kurseOf(r).length : (j.reihen || []).some(function(x){ return kurseOf(x).length; });
   openForm({ title:'Neues Schuljahr' + (r ? ': ' + r.titel : ': ' + f.name + ' ' + j.name), submit:'Übernehmen', noFocus:true,
-    intro:'Material, Notizen und Checkliste bleiben.',
+    intro:'Material, Notizen, Checkliste und Planung bleiben.',
     fields:[
       ziele.length > 1 ? { name:'ziel', label:'Was soll passieren?', type:'select', value:'hier', options:ziele } : { type:'html', html:'' },
       { name:'aus', label:'Alle Unterrichtsvorhaben für SuS ausblenden', type:'check', value:true },
@@ -2567,10 +2644,11 @@ function neuesSchuljahr(f, j, r){
       { name:'mats', label:'Auch jedes andere Material einzeln ausblenden', type:'check', value:false },
       { name:'termine', label:'Freischalt-Termine („sichtbar ab“) löschen', type:'check', value:true },
       { name:'hinweis', label:'Hinweise löschen', type:'check', value:true },
+      { name:'plan', label:'Erledigte To-dos aus der Planung löschen', type:'check', value:true },
       hatKurse ? { name:'kurse', label:'Parallelkurse entfernen (neue Kurse, neue Links)', type:'check', value:true } : { type:'html', html:'' }
     ]}).then(function(v){
     if(!v) return;
-    var o = { aus:v.aus, loes:v.loes, mats:v.mats, termine:v.termine, hinweis:v.hinweis, kurse:!!v.kurse }, ziel = v.ziel || 'hier';
+    var o = { aus:v.aus, loes:v.loes, mats:v.mats, termine:v.termine, hinweis:v.hinweis, plan:v.plan, kurse:!!v.kurse }, ziel = v.ziel || 'hier';
     if(ziel === 'hier'){
       if(!r && !confirm('Alle ' + (j.reihen || []).length + ' Reihen in ' + f.name + ' ' + j.name + ' zurücksetzen?')) return;
       return commit('Neues Schuljahr: ' + (r ? r.titel : f.name + ' ' + j.name), function(){ (r ? [r] : j.reihen || []).forEach(function(x){ zuruecksetzen(x, o); if(o.kurse) setWahl(x, null); }); });
@@ -2717,7 +2795,7 @@ var actions = {
       commit('Notizen: ' + c.v.titel, function(){
         var n = planungOf({ planung:{ ziel:v.ziel, verlauf:v.verlauf, reflexion:v.reflexion } });
         if(n) c.v.planung = n; else delete c.v.planung;
-        delete lkOpen[c.v.id]; saveJSON(LK_KEY, lkOpen);
+        lkAuf[c.v.id] = 1;
       });
     });
   }),
@@ -2765,7 +2843,16 @@ var actions = {
     var z = zustand(c.m, c.k), an = !z.ausgeblendet;
     commit((an ? 'Ausgeblendet: ' : 'Eingeblendet: ') + c.m.titel + (c.k ? ' (' + c.k.name + ')' : ''), function(){ setZustand(c.m, c.k, an, z.ab); });
   }),
-  'auswahl-an': function(){ auswahl = auswahl || {}; auswahlZeigen(); },
+  'edit-plan': needAdmin(function(c){
+    openForm({ title:'Planung: ' + c.r.titel, intro:'Nur für dich sichtbar. „[ ]“ wird zum Kästchen, „#“ zur Überschrift.', fields:[
+      { name:'plan', label:'Planung', type:'textarea', value:c.r.plan || '', placeholder:'# Nächste Woche\n[ ] AB Reihenschaltung erstellen\n[ ] Versuch 2 testen\n# Nächstes Mal\n- mehr Zeit für Versuch 2' }
+    ]}).then(function(v){
+      if(!v) return;
+      var t = String(v.plan || '').replace(/\s+$/, '');
+      if(t === String(c.r.plan || '')) return;
+      commit('Planung: ' + c.r.titel, function(){ if(t) c.r.plan = t; else delete c.r.plan; });
+    });
+  }),
   'menu-v': function(c){
     var r = c.r, v = c.v, k = wahlKurs(r), fuer = k ? ' (' + k.name + ')' : '', hm = heuteMarke(r, k) === v.id;
     menuAt(c._el, [
@@ -2950,13 +3037,12 @@ document.addEventListener('click', function(e){
   if(t){
     var area = t.nextElementSibling, open = area.hidden;
     area.hidden = !open; t.setAttribute('aria-expanded', open);
-    if(open) delete lkOpen[t.dataset.lk]; else lkOpen[t.dataset.lk] = 1;
-    saveJSON(LK_KEY, lkOpen); return;
+    if(open) delete lkAuf[t.dataset.lk]; else lkAuf[t.dataset.lk] = 1;
+    return;
   }
   var b = e.target.closest('[data-act]');
   if(!b || !actions[b.dataset.act]) return;
   /* Mehrfachauswahl: im Auswahl-Modus oder mit Strg/⌘/Umschalt antippen = markieren statt öffnen */
-  if(b.dataset.act === 'edit-m' && editing && b.dataset.m && (auswahl || e.ctrlKey || e.metaKey || e.shiftKey)){ e.preventDefault(); auswahlToggle(b.dataset.m); return; }
   e.preventDefault();
   var cx = ctx(b); cx._el = b;
   actions[b.dataset.act](cx);
@@ -3263,7 +3349,7 @@ function shareReihe(f, j, r, k){
       + (navigator.share ? '<button type="button" class="btn" data-x="share">' + ico('share') + 'Teilen</button>' : '')
       + (qrFile && teilenStattLaden(qrFile) ? '<button type="button" class="btn" data-x="qrshare">' + ico('share') + 'QR-Code teilen</button>'
         : '<a class="btn" href="' + gif + '" download="' + esc(qrFile.name) + '">' + ico('download') + 'QR-Code speichern</a>')
-      + '<button type="button" class="btn" data-x="open">' + ico('eye') + 'Kursansicht ansehen</button></div>' }],
+      + '<button type="button" class="btn" data-x="open">' + ico('eye') + 'SuS-Ansicht öffnen</button></div>' }],
       wire:function(form){
         form.addEventListener('click', function(e){
           var x = e.target.closest('[data-x]'); if(!x) return;
@@ -3760,7 +3846,7 @@ function textAlsNotiz(text, c){
     commit('Notiz: ' + v.titel, function(){
       var pl = planungOf(v) || {}, alt = pl[o.feld] || '';
       pl[o.feld] = alt ? alt + '\n' + o.text : o.text; v.planung = planungOf({ planung:pl });
-      delete lkOpen[v.id]; saveJSON(LK_KEY, lkOpen);
+      lkAuf[v.id] = 1;
     });
   });
 }
@@ -3774,6 +3860,8 @@ document.addEventListener('paste', function(e){
   if(istEingabe(e.target) && !files.length) return;
   e.preventDefault();
   var row = zeigerEl && document.contains(zeigerEl) && zeigerEl.closest ? zeigerEl.closest('.row[data-v]') : null, c = row ? ctx(row) : null, p = hashParts();
+  var pb = zeigerEl && document.contains(zeigerEl) && zeigerEl.closest ? zeigerEl.closest('.plan-box') : null;
+  if(!files.length && pb){ var pc = ctx(pb); if(pc.r){ ensureFresh().then(function(){ var x = ctx(pb); planAnhaengen(x.r, text); toast('In die Planung eingefügt.'); }).catch(fail); } return; }
   if(!files.length){ textAlsNotiz(text, c && c.v ? c : null); return; }
   var fixed = {};
   if(c && c.v) fixed = { f:c.f.id, j:c.j.id, r:c.r.id, v:c.v.id };
@@ -3931,6 +4019,7 @@ function runImport(imp, plan, modus){
                 if(ri.ordner) r.ordner = ri.ordner;
                 if(ri.hinweis && ri.hinweis.text) r.hinweis = ri.hinweis;
                 if(ri.checkliste && ri.checkliste.length) r.checkliste = ri.checkliste.slice();
+                if(ri.plan && !r.plan) r.plan = String(ri.plan);
                 j.reihen.push(r);
               }
               (Array.isArray(ri.kurse) ? ri.kurse : []).forEach(function(k){
@@ -4047,6 +4136,7 @@ function exportZip(onlyF, onlyJ){
         if(r.ordner) pr.ordner = r.ordner;
         if(r.hinweis) pr.hinweis = r.hinweis;
         if(r.checkliste && r.checkliste.length) pr.checkliste = r.checkliste.slice();
+        if(r.plan) pr.plan = r.plan;
         if(kurseOf(r).length) pr.kurse = JSON.parse(JSON.stringify(r.kurse));
         pe.reihen.push(pr);
         if(r.titelbild) job(r.titelbild, rdir + '/00 Titelbild.' + r.titelbild.ext, pr, 'titelbild');
@@ -4189,12 +4279,18 @@ $('#search-btn').innerHTML = ico('search');
 $('#kurs-exit').addEventListener('click', function(){ location.hash = location.hash.split('?')[0].replace(/^#\/kurs\//, '#/f/'); });
 $('#settings-link').innerHTML = ico('gear') + 'Einstellungen';
 $('#edit-toggle').addEventListener('click', function(){
-  if(editing){ editing = false; render(); return; }
+  if(editing){ editing = false; lkAuf = {}; render(); return; }
   ensureFresh().then(function(){ editing = true; render(); }).catch(fail);
 });
-$('#add-material').addEventListener('click', function(){
-  var p = location.hash.replace(/^#\/?/, '').split('/').map(function(x){ try{ return decodeURIComponent(x); }catch(e){ return x; } });
-  saveMaterial(p[0] === 'f' ? { f:p[1], j:p[2], r:p[3] } : {});
+/* „+ Material“ oben: einzelnes Material oder ganzer Ordner / mehrere Dateien (am iPad praktisch) */
+function neuesMaterialHier(){ var p = hashParts(); saveMaterial(p[0] === 'f' ? { f:p[1], j:p[2], r:p[3] } : {}); }
+$('#add-material').addEventListener('click', function(e){
+  var p = hashParts(), loc = p[0] === 'f' ? { f:p[1], j:p[2], r:p[3] } : {};
+  Object.keys(loc).forEach(function(q){ if(!loc[q]) delete loc[q]; });
+  menuAt(e.currentTarget, [
+    { icon:'plus', label:'Material', fn:neuesMaterialHier },
+    { icon:'importi', label:'Ordner oder mehrere Dateien', fn:function(){ openSyncPicker(loc); } }
+  ]);
 });
 $('#reload').addEventListener('click', function(){
   if(!keyB){ boot(); return; }
