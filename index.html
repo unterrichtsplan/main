@@ -275,7 +275,17 @@ dialog::backdrop{background:rgba(10,14,20,.5)}
 .viewer{position:fixed;inset:0;z-index:40;background:var(--page);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
 .viewer-bar{display:flex;align-items:center;gap:.4rem;padding:.45rem .6rem;border-bottom:1px solid var(--line);background:var(--sheet)}
 .viewer-bar b{margin-right:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:.3rem}
-.viewer-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;position:relative}
+.viewer-main{flex:1;display:flex;min-height:0}
+.viewer-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;position:relative;min-width:0}
+/* QR-Code + Arbeitsauftrag neben dem Material (nur Lehrkraft, nichts wird gespeichert) */
+.qr-aside{width:min(400px,38vw);flex:none;border-left:1px solid var(--line);background:var(--sheet);overflow:auto;padding:1.1rem;display:flex;flex-direction:column;gap:.8rem}
+.qr-aside .qr-box{background:#fff;border-radius:12px;padding:.6rem}
+.qr-aside .qr-box svg{width:100%;height:auto;display:block}
+.qr-aside textarea{width:100%;min-height:7.5rem;font:inherit;font-size:clamp(1.25rem,2.2vw,1.9rem);font-weight:700;line-height:1.3;border:1px solid var(--line);border-radius:12px;padding:.6rem .7rem;background:var(--page);color:inherit;resize:vertical}
+.qr-aside .qr-titel{font-size:1.05rem;font-weight:700;margin:0}
+.qr-aside .qr-warn{background:var(--warn-soft,#FFF6D6);border-radius:10px;padding:.6rem .7rem;font-size:.92rem}
+@media (max-width:700px){.viewer-main{flex-direction:column-reverse}.qr-aside{width:auto;border-left:0;border-top:1px solid var(--line);max-height:55%}}
+.viewer:fullscreen .viewer-bar{opacity:.25;transition:opacity .2s}.viewer:fullscreen .viewer-bar:hover{opacity:1}
 .viewer-body iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#fff}
 .viewer-body img,.viewer-body video{max-width:100%;display:block;margin:1rem auto}
 .pdf-pages{padding:.8rem;display:grid;gap:.8rem;justify-items:center;padding-bottom:calc(1rem + env(safe-area-inset-bottom,0px))}
@@ -321,6 +331,24 @@ footer a{display:inline-flex;align-items:center;gap:.35rem;color:var(--muted);te
 /* Material: Auge, ausgeblendet */
 .mwrap{display:inline-flex;align-items:center;gap:.1rem;max-width:100%}
 .mwrap .iconbtn{width:40px;height:40px}
+.mwrap .iconbtn.vis-mini,.row-acts .vis-mini{width:34px;height:34px;opacity:.45}
+.mwrap .iconbtn.vis-mini:hover,.row-acts .iconbtn:hover,.mwrap .iconbtn.vis-mini:focus-visible{opacity:1}
+.row-acts{display:inline-flex;gap:.05rem;align-items:flex-start}
+.row-acts .iconbtn{width:38px;height:38px;color:var(--muted)}
+.editing .row-acts{display:none}
+.row.aktuell{box-shadow:inset 4px 0 0 var(--acc);background:color-mix(in srgb, var(--acc) 6%, var(--sheet))}
+.akt-badge{display:inline-block;margin-left:.45rem;padding:.05rem .45rem;border-radius:999px;font-size:.72rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase;
+  background:color-mix(in srgb, var(--acc) 14%, transparent);color:var(--acc);vertical-align:middle}
+.chip.ziel,[data-m].ziel{outline:3px solid var(--acc);outline-offset:2px}
+.auswahl-bar{position:fixed;left:50%;bottom:calc(1rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:45;display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;
+  background:var(--sheet);border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 32px rgba(0,0,0,.2);padding:.45rem .55rem .45rem 1rem;max-width:calc(100vw - 1.5rem)}
+.auswahl-bar b{margin-right:.4rem}
+.auswahl-bar .pillbtn.danger{color:var(--danger)}
+.chip.gewaehlt{outline:3px solid var(--acc);outline-offset:2px;background:color-mix(in srgb, var(--acc) 12%, var(--sheet))}
+.auswahl .chip[data-act=edit-m]{cursor:pointer}
+.popmenu{position:absolute;z-index:60;min-width:230px;background:var(--sheet);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:.35rem;display:grid}
+.popmenu button{display:flex;align-items:center;gap:.6rem;padding:.65rem .75rem;border:0;background:transparent;border-radius:10px;font:inherit;color:inherit;text-align:left;cursor:pointer;min-height:44px}
+.popmenu button:hover,.popmenu button:focus-visible{background:var(--hover, rgba(0,0,0,.06))}
 .chip.aus{opacity:.55;border-style:dashed}
 .chip .aus-i{width:1em;height:1em;color:var(--muted)}
 .lk-area.edit{margin-top:.6rem}
@@ -475,10 +503,11 @@ var TYPES = [
   ['pruefung','Klassenarbeit / Test / Klausur'], ['buch','Buchaufgabe']
 ];
 /* Auswahl im Dialog: nur, was sich unterschiedlich verhält. Datei-Art (HTML, Präsentation, Link, Video) ergibt sich aus Datei bzw. Link. */
-var ARTEN = [['dokument','Material'], ['loesung','Lösung'], ['pruefung','Klassenarbeit / Test / Klausur'], ['buch','Buchaufgabe (nur Text)']];
-function artOf(typ){ return typ === 'loesung' || typ === 'pruefung' || typ === 'buch' ? typ : 'dokument'; }
+var ARTEN = [['dokument','Material'], ['tafelbild','Tafelbild (Foto)'], ['loesung','Lösung'], ['pruefung','Klassenarbeit / Test / Klausur'], ['buch','Buchaufgabe (nur Text)']];
+function artOf(typ){ return typ === 'mitschrift' ? 'tafelbild' : typ === 'loesung' || typ === 'pruefung' || typ === 'buch' ? typ : 'dokument'; }
 /* tatsächlicher Typ aus Art + Datei/Link (alter Typ bleibt, wenn nichts Neues gewählt wurde) */
 function typAus(art, slot, alt){
+  if(art === 'tafelbild') return 'mitschrift';
   if(art !== 'dokument') return art;
   if(slot && slot.mode === 'file' && slot.file){ var g = guessTyp(slot.file.name); return g === 'html' || g === 'praesentation' ? g : 'ab'; }
   if(slot && slot.mode === 'link') return /youtu\.?be|vimeo|mediathek|zdf\.de|planet-schule/i.test(slot.url || '') ? 'video' : 'link';
@@ -525,6 +554,10 @@ var I = {
   nw:'<path d="M9.5 3h5M10.5 3v5.5L5.2 18.3A1.8 1.8 0 0 0 6.8 21h10.4a1.8 1.8 0 0 0 1.6-2.7L13.5 8.5V3"/><path d="M12 19v-3.5"/><path d="M12 16.5c-1.9 0-3-1-3-2.6 1.8 0 3 .9 3 2.6z"/><path d="M12 15.5c0-1.9 1.2-3.1 3.2-3.1 0 1.9-1.3 3.1-3.2 3.1z"/>',
   klasse:'<circle cx="9" cy="8" r="3"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.3c.5-.2 1-.3 1.5-.3 2.2 0 3.9 1.5 4.4 4"/>',
   klp:'<path d="M9 4h6v3H9z"/><path d="M7 5H5v16h14V5h-2"/><path d="M8.5 12l2 2 4-4"/>',
+  mehr:'<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+  voll:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+  kopie:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
+  tafelbild:'<rect x="3" y="4" width="18" height="12" rx="1"/><path d="M7 20l2-4M17 20l-2-4M7 9h6M7 12h9"/>',
   eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   eyeoff:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/>',
   qr:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/>',
@@ -1047,10 +1080,13 @@ function matChip(m, ref, mode, k){
     var lbl = (z.ausgeblendet ? 'Für SuS einblenden' : 'Für SuS ausblenden') + (k ? ' (' + k.name + ')' : '');
     return '<span class="mwrap" data-sort-item ' + ref + '>' + chip + '<button class="iconbtn" data-act="vis-m" ' + ref + ' aria-label="' + esc(lbl) + '" title="' + esc(lbl) + '">' + ico(z.ausgeblendet ? 'eyeoff' : 'eye') + '</button></span>';
   }
-  if(m.typ === 'buch') return chipBuch(m, ref, cls, badge);
-  if(m.datei) return chipFile(m.datei, m.titel, m.typ, ref + ' data-slot="datei"', cls, badge);
-  if(m.url) return chipLink(m.url, m.titel, m.typ, cls, badge);
-  return '';
+  var out = m.typ === 'buch' ? chipBuch(m, ref, cls, badge) : m.datei ? chipFile(m.datei, m.titel, m.typ, ref + ' data-slot="datei"', cls, badge) : m.url ? chipLink(m.url, m.titel, m.typ, cls, badge) : '';
+  /* Lehrkraft (auch ohne Bearbeiten-Modus): kleines Auge zum Ein-/Ausblenden */
+  if(out && mode === 'lehrer' && !lk && canEdit()){
+    var vl = (z.ausgeblendet ? 'Für SuS einblenden' : 'Für SuS ausblenden') + (k ? ' (' + k.name + ')' : '');
+    out = '<span class="mwrap">' + out + '<button class="iconbtn vis-mini" data-act="vis-m" ' + ref + ' aria-label="' + esc(vl) + '" title="' + esc(vl) + '">' + ico(z.ausgeblendet ? 'eyeoff' : 'eye') + '</button></span>';
+  }
+  return out;
 }
 /* Trenner ohne folgendes Material weglassen (z. B. wenn der nächste Tag für SuS noch ausgeblendet ist) */
 function ohneLeereTrenner(list){ return list.filter(function(m, i){ if(m.typ !== 'tag') return true; var n = list[i + 1]; return !!n && n.typ !== 'tag'; }); }
@@ -1137,6 +1173,15 @@ function renderJahrgang(f, j){
     + (reihen.length ? '<button class="addbtn" data-act="neu-j" ' + idsAttr({f:f, j:j}) + '>' + ico('klp') + 'Neues Schuljahr</button>' : '');
   if(klpFor(f, j.name).length) html += '<button class="addbtn" data-act="klp-r" ' + idsAttr({f:f, j:j}) + '>' + ico('klp') + 'Aus dem Kernlehrplan ergänzen</button>';
   return html + '</div></div>';
+}
+/* Aktuelle Einheit: „heute“ gesetzt (gilt nur heute) – sonst das letzte für SuS sichtbare Vorhaben,
+   solange noch nicht alles freigeschaltet ist */
+function heuteMarke(r, k){ var h = r.heute && r.heute[k ? k.id : '_']; return h && h.am === heute() ? h.v : null; }
+function aktuellV(r, k){
+  var vs = r.vorhaben || [], hid = heuteMarke(r, k), hv = hid && findIn(vs, hid);
+  if(hv && sichtbarSuS(hv, k)) return hv;
+  var vis = vs.filter(function(v){ return sichtbarSuS(v, k); });
+  return vis.length && vis.length < vs.length ? vis[vis.length - 1] : null;
 }
 function titelseiteOf(r){ var t = r && r.titelseite; return t && (t.datei || t.url) ? t : null; }
 /* Knopf zur verknüpften Seite (Datei im Viewer, Link in neuem Tab) */
@@ -1302,7 +1347,7 @@ function renderReihe(f, j, r, mode, kk){
         + (!kurs && parts.lk.length ? '<div style="flex-basis:100%">' + lkBlock(r.id + ':ov', parts.lk) + '</div>' : '') + '</div>';
     }
   }
-  var vs = r.vorhaben || [], shown = 0;
+  var vs = r.vorhaben || [], shown = 0, aktV = aktuellV(r, k), aktHeute = !!(aktV && heuteMarke(r, k) === aktV.id);
   html += '<div class="rows"' + (kurs ? '' : ' data-sort="v" ' + ids) + '>';
   vs.forEach(function(v, i){
     if(kurs && !sichtbarSuS(v, k)) return;
@@ -1314,8 +1359,11 @@ function renderReihe(f, j, r, mode, kk){
     var lk = kurs ? [] : mats.filter(function(m){ return m.bereich === 'lk'; }).map(chipOf).filter(Boolean);
     var eyeLbl = (z.ausgeblendet ? 'Für SuS einblenden' : 'Für SuS ausblenden') + (k ? ' (' + k.name + ')' : '');
     var eye = '<button class="iconbtn" data-act="vis-v" ' + vid + ' aria-label="' + esc(eyeLbl) + '" title="' + esc(eyeLbl) + '">' + ico(z.ausgeblendet ? 'eyeoff' : 'eye') + '</button>';
-    var fuer = k ? ' (' + esc(k.name) + ')' : '';
-    html += '<div class="row' + (!kurs && !sichtbarSuS(v, k) ? ' aus' : '') + '"' + (kurs ? '' : ' data-sort-item') + ' ' + vid + '><span class="nr">' + (i + 1) + '</span><div class="row-title"><b>' + esc(v.titel) + '</b>'
+    var fuer = k ? ' (' + esc(k.name) + ')' : '', akt = v === aktV;
+    var acts = kurs || editing || !canEdit() ? '' : '<span class="row-acts">' + eye.replace('class="iconbtn"', 'class="iconbtn vis-mini"')
+      + '<button class="iconbtn" data-act="menu-v" ' + vid + ' aria-label="Weitere Aktionen" title="Weitere Aktionen">' + ico('mehr') + '</button></span>';
+    html += '<div class="row' + (!kurs && !sichtbarSuS(v, k) ? ' aus' : '') + (akt ? ' aktuell' : '') + '"' + (kurs ? '' : ' data-sort-item') + ' ' + vid + '><span class="nr">' + (i + 1) + '</span><div class="row-title"><b>' + esc(v.titel) + '</b>'
+      + (akt ? '<span class="akt-badge">' + (aktHeute ? 'heute' : 'aktuell') + '</span>' : '')
       + (v.notiz ? '<small>' + esc(v.notiz) + '</small>' : '')
       + (!kurs && z.ausgeblendet ? '<span class="aus-badge">' + ico('eyeoff') + 'für SuS ausgeblendet' + fuer + '</span>' : '')
       + (!kurs && !z.ausgeblendet && gesperrt(v, k) ? '<span class="aus-badge ab">' + ico('clock') + 'für SuS ab ' + esc(datumKurz(z.ab)) + fuer + '</span>' : '')
@@ -1324,11 +1372,12 @@ function renderReihe(f, j, r, mode, kk){
       + (!sus.length && !editing ? '<span class="muted" style="font-size:.95rem;padding-top:.5rem">' + (lk.length ? '' : 'Noch kein Material.') + '</span>' : '')
       + (kurs ? '' : '<button class="chip add edit-only" data-act="add-m" data-bereich="sus" ' + vid + '>' + ico('plus') + '<span>Unterrichtsmaterial</span></button>'
         + '<button class="chip add edit-only" data-act="add-t" ' + vid + ' title="Trenner für einen weiteren Tag">' + ico('plus') + '<span>Tag</span></button>') + '</div>'
-      + (kurs ? '' : (editing ? lkEditBlock(lk, vid, planungHtml(v)) : lkBlock(v.id, lk, planungHtml(v)))) + '</div>' + (kurs ? '' : tools('v', vid, { extra:eye })) + '</div>';
+      + (kurs ? '' : (editing ? lkEditBlock(lk, vid, planungHtml(v)) : lkBlock(v.id, lk, planungHtml(v)))) + '</div>' + acts + (kurs ? '' : tools('v', vid, { extra:eye })) + '</div>';
   });
   if(!shown) html += '<div class="row empty">' + (kurs ? 'Hier gibt es noch nichts zu sehen.' : 'Noch keine Unterrichtsvorhaben.') + '</div>';
   html += (kurs ? '' : '<button class="addbtn add-row edit-only" data-act="add-v" ' + ids + '>' + ico('plus') + 'Unterrichtsvorhaben</button>') + '</div>';
-  if(!kurs) html += '<div class="btnline edit-only"><button class="addbtn" data-act="sync-r" ' + ids + '>' + ico('importi') + 'Ordner hochladen</button>'
+  if(!kurs) html += '<div class="btnline edit-only"><button class="addbtn" data-act="auswahl-an" ' + ids + ' title="Mehrere Materialien markieren (am Laptop auch Strg + Klick)">' + ico('checklist') + 'Auswählen</button>'
+    + '<button class="addbtn" data-act="sync-r" ' + ids + '>' + ico('importi') + 'Ordner hochladen</button>'
     + (kurseOf(r).length ? '' : '<button class="addbtn" data-act="add-k" ' + ids + '>' + ico('plus') + 'Parallelkurs anlegen</button>')
     + '<button class="addbtn" data-act="neu-r" ' + ids + '>' + ico('klp') + 'Neues Schuljahr</button></div>';
   var dl = susItems(r, k), dlMb = dl.reduce(function(s, x){ return s + (x.m.datei ? +x.m.datei.mb || 0 : 0); }, 0);
@@ -1434,6 +1483,13 @@ var INFO = [
   ['Notizen', 'Schwerpunktziel, Verlaufsplan und Reflexion pro Vorhaben – nur in der Lehrkraft-Ansicht. Keine Schülernamen eintragen.', true],
   ['Suche', 'Durchsucht alle Fächer und Jahrgänge, auch Dateinamen, Hinweise, Checklisten und Notizen. Umlaute können weggelassen werden.', true],
   ['Ordner hochladen', 'Fach und Jahrgang aus Ordnernamen wie „2526 M 6“, Reihe = Ordner, Nummer im Dateinamen = Vorhaben. PDF und Word mit gleichem Namen: PDF für SuS, Word für Lehrkräfte. Erneut ausführen gleicht ab; am Laptop Gelöschtes bleibt hier.', true],
+  ['Ein- und ausblenden', 'Das Auge an Vorhaben und Material geht auch ohne Bearbeiten-Modus. „⋯“ an einem Vorhaben: „Bis hier freischalten“ (alle Vorhaben bis dahin) oder „Als heute markieren“ (gilt nur heute).', true],
+  ['Aktuelle Einheit', 'Das letzte für SuS sichtbare Vorhaben ist leicht hervorgehoben – in der Kursansicht springt die Seite dorthin. Ist alles freigeschaltet, wird nichts hervorgehoben. „Als heute markieren“ hat Vorrang.', false],
+  ['QR-Code zum Material', 'Material öffnen → „QR“: Neben dem Material erscheinen ein QR-Code direkt zu diesem Material (für den gewählten Kurs) und ein Feld für den Arbeitsauftrag. Der Arbeitsauftrag wird nicht gespeichert. Vollbild mit „F“, Pfeiltasten → nächstes/vorheriges Material.', true],
+  ['Tafelbild', 'Art „Tafelbild (Foto)“ im Material-Dialog: Am iPad öffnet sich direkt die Kamera, der Titel bekommt das Datum.', true],
+  ['Material kopieren', 'Material bearbeiten → Ort ändern → „Als Kopie dort anlegen“. Die Datei wird nicht doppelt gespeichert.', true],
+  ['Mehrere Materialien', 'Bearbeiten → „Auswählen“ (am Laptop: Strg + Klick) → markierte Materialien zusammen ein-/ausblenden, verschieben oder löschen.', true],
+  ['Tastenkürzel', 'Am Laptop: E = Bearbeiten, / = Suche, N = neues Material im Vorhaben unter der Maus, Esc = Auswahl beenden.', true],
   ['Papierkorb', 'Gelöschtes Material landet im Papierkorb (Einstellungen → Speicher) und lässt sich 30 Tage lang wiederherstellen. Danach wird es endgültig gelöscht – oder vorher über „Papierkorb leeren“.', true],
   ['Einfügen (Strg+V)', 'Am Laptop Dateien aus dem Explorer oder Screenshots kopieren und einfügen: Maus über ein Vorhaben → Datei kommt direkt dorthin. Sonst öffnet sich das Fenster zum Zuordnen. Text wird zur Notiz. In einem offenen Dialog füllt Strg+V das Datei-Feld. Im Material-Dialog: Enter speichert, Entf löscht.', true],
   ['Datei ersetzen', 'Neue Datei mit gleichem Dateinamen hochladen – Titel, Sichtbarkeit und Kurse bleiben. Oder Material antippen und unter „Datei“ eine neue wählen.', true],
@@ -1536,8 +1592,7 @@ function render(){
   $('#edit-toggle').innerHTML = editing ? 'Fertig' : ico('edit') + '<span class="lbl">Bearbeiten</span>';
   $('#add-material').innerHTML = ico('plus') + '<span class="lbl">Material</span>';
   $('#brand-title').textContent = (data && data.titel) || (zugang && zugang.titel) || 'Unterrichtsmaterial';
-  var parts = location.hash.replace(/^#\/?/, '').split('/').map(function(p){ try{ return decodeURIComponent(p); }catch(e){ return p; } });
-  var app = $('#app'), kurs = parts[0] === 'kurs';
+  var parts = hashParts(), app = $('#app'), kurs = parts[0] === 'kurs';
   document.body.classList.toggle('kurs', kurs);
   if(kurs){ editing = false; document.body.classList.remove('editing'); }
   $('#search-btn').hidden = kurs || !data || !keyB;
@@ -1555,7 +1610,9 @@ function render(){
     var kf = findIn(data.faecher, parts[1]), kj = kf && findIn(kf.jahrgaenge, parts[2]), kr = kj && findIn(kj.reihen, parts[3]);
     var kk = kr && parts[4] ? findIn(kurseOf(kr), parts[4]) || null : null;
     app.innerHTML = kr ? renderReihe(kf, kj, kr, 'kurs', kk) : '<div class="empty-state">Diese Reihe gibt es nicht (mehr).</div>';
-    hydrate(); return;
+    hydrate();
+    if(kr) kursEinstieg(kf, kj, kr, kk);
+    return;
   }
   if(parts[0] === 'suche'){ app.innerHTML = renderSuche(); wireSuche(); return; }
   if(parts[0] === 'f'){
@@ -1564,11 +1621,35 @@ function render(){
     if(parts[3]){
       var r = findIn(j.reihen, parts[3]);
       app.innerHTML = r ? renderReihe(f, j, r, 'lehrer') : crumbs([]) + '<div class="empty-state">Diese Reihe gibt es nicht (mehr).</div>';
-      hydrate();
+      hydrate(); auswahlZeigen();
     } else app.innerHTML = renderJahrgang(f, j);
     return;
   }
   app.innerHTML = renderStart();
+}
+
+/* Kursansicht beim Öffnen: Direktlink „?m=ID“ öffnet das Material (Zurück → Gesamtansicht),
+   sonst zur aktuellen Einheit scrollen, wenn sie nicht zu sehen ist */
+var einstiegFuer = null;
+function kursEinstieg(f, j, r, k){
+  var mid = hashMaterial(), route = location.hash.split('?')[0];
+  if(mid){
+    history.replaceState(history.state, '', route); einstiegFuer = route;
+    var hit = null;
+    (r.vorhaben || []).forEach(function(v){ if(!sichtbarSuS(v, k)) return; (v.materialien || []).forEach(function(m){ if(m.id === mid && m.bereich !== 'lk' && sichtbarSuS(m, k)) hit = { f:f, j:j, r:r, v:v, m:m, k:k }; }); });
+    if(!hit){ toast('Dieses Material ist gerade nicht freigeschaltet.'); return; }
+    if(hit.m.datei) return openCtx(hit);
+    var el = document.querySelector('[data-m="' + CSS.escape(mid) + '"]');
+    if(el){ el.scrollIntoView({ block:'center' }); el.classList.add('ziel'); }
+    return;
+  }
+  if(einstiegFuer === route) return;
+  einstiegFuer = route;
+  setTimeout(function(){   // nach dem Zurückscrollen beim Seitenwechsel
+    var row = $('.row.aktuell'); if(!row) return;
+    var b = row.getBoundingClientRect();
+    if(b.top > innerHeight - 120) window.scrollTo(0, scrollY + b.top - 80);
+  }, 60);
 }
 
 var blobCache = {};
@@ -1647,8 +1728,10 @@ function openFile(F, titel, typ, c, replace){
     v.innerHTML = '<div class="viewer-bar"><button class="iconbtn" data-v="close" aria-label="Schließen">' + ico('back') + '</button><b>' + esc(titel) + '</b>'
       + '<button class="pillbtn" data-v="share" hidden>' + ico('share') + '<span class="lbl">Teilen</span></button>'
       + '<a class="pillbtn" data-v="dl" hidden>' + ico('download') + '<span class="lbl">Speichern</span></a>'
+      + (qrMoeglich(c) ? '<button class="pillbtn" data-v="qr" aria-pressed="false" title="QR-Code und Arbeitsauftrag anzeigen">' + ico('qr') + '<span class="lbl">QR</span></button>' : '')
+      + (document.fullscreenEnabled ? '<button class="iconbtn" data-v="voll" aria-label="Vollbild (F)" title="Vollbild (F)">' + ico('voll') + '</button>' : '')
       + (nextOf(c) ? '<button class="pillbtn" data-v="next">' + '<span class="lbl">Weiter</span>' + ico('next') + '</button>' : '') + '</div>'
-      + '<div class="viewer-body"><div class="center-spin"><span class="spin"></span></div></div>';
+      + '<div class="viewer-main"><div class="viewer-body"><div class="center-spin"><span class="spin"></span></div></div></div>';
     if(viewerState) closeViewer();
     document.body.appendChild(v);
     document.body.style.overflow = 'hidden';
@@ -1687,7 +1770,10 @@ function openFile(F, titel, typ, c, replace){
     v.addEventListener('click', function(e){
       if(e.target.closest('[data-v=close]')) history.back();
       if(e.target.closest('[data-v=next]')) openNext();
+      if(e.target.closest('[data-v=qr]')) qrUmschalten(vs);
+      if(e.target.closest('[data-v=voll]')) vollbild(v);
     });
+    if(qrOffen && qrMoeglich(c)) qrUmschalten(vs, true);
   });
 }
 /* ---------- HTML-Seiten: Brücke zur Oberfläche ----------
@@ -1741,6 +1827,56 @@ function nextOf(c){
   l.forEach(function(x, k){ if(x.m === c.m) i = k; });
   return i >= 0 ? l[i + 1] || null : null;
 }
+function prevOf(c){
+  if(!c || !c.m) return null;
+  var l = reiheFolge(c), i = -1;
+  l.forEach(function(x, k){ if(x.m === c.m) i = k; });
+  return i > 0 ? l[i - 1] : null;
+}
+/* ---------- Viewer: QR-Code + Arbeitsauftrag, Vollbild, Pfeiltasten ---------- */
+var qrOffen = false, auftragText = '';   // Arbeitsauftrag nur für diese Sitzung, nie gespeichert
+function qrMoeglich(c){ return !!(c && c.m && c.m.bereich !== 'lk' && c.f && c.j && c.r && canEdit() && !document.body.classList.contains('kurs')); }
+function materialUrl(c, k){ return kursUrl(c.f, c.j, c.r, k) + '?m=' + encodeURIComponent(c.m.id); }
+function qrUmschalten(vs, an){
+  var v = vs.el, main = $('.viewer-main', v), alt = $('.qr-aside', v), btn = $('[data-v=qr]', v);
+  if(alt && an !== true){ alt.remove(); qrOffen = false; if(btn) btn.setAttribute('aria-pressed', 'false'); return; }
+  if(alt) return;
+  var c = vs.c, k = wahlKurs(c.r), url = materialUrl(c, k);
+  var aside = document.createElement('aside'); aside.className = 'qr-aside'; aside.setAttribute('aria-label', 'QR-Code und Arbeitsauftrag');
+  var frei = sichtbarSuS(c.v, k) && sichtbarSuS(c.m, k);
+  aside.innerHTML = '<p class="qr-titel">' + esc(c.m.titel) + (k ? ' <span class="muted">· ' + esc(k.name) + '</span>' : '') + '</p>'
+    + '<div class="qr-box"><div class="center-spin" style="min-height:120px"><span class="spin"></span></div></div>'
+    + (frei ? '' : '<div class="qr-warn">Für SuS' + (k ? ' (' + esc(k.name) + ')' : '') + ' noch nicht sichtbar. <button type="button" class="linkbtn" data-q="frei">Jetzt freischalten</button></div>')
+    + '<textarea data-q="auftrag" placeholder="Arbeitsauftrag, z. B. Bearbeitet A1, A2" aria-label="Arbeitsauftrag">' + esc(auftragText) + '</textarea>'
+    + '<div class="btnline" style="margin:0"><button type="button" class="btn" data-q="copy">' + ico('link') + 'Link kopieren</button></div>';
+  main.appendChild(aside); qrOffen = true; if(btn) btn.setAttribute('aria-pressed', 'true');
+  loadQr().then(function(qrcode){ var qr = qrcode(0, 'M'); qr.addData(url); qr.make(); $('.qr-box', aside).innerHTML = qr.createSvgTag({ cellSize:4, margin:2, scalable:true }); })
+    .catch(function(){ $('.qr-box', aside).textContent = url; });
+  var ta = $('[data-q=auftrag]', aside);
+  ta.addEventListener('input', function(){ auftragText = ta.value; });
+  aside.addEventListener('click', function(e){
+    var q = e.target.closest('[data-q]'); if(!q) return;
+    if(q.dataset.q === 'copy') (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function(){ toast('Link kopiert.'); }, function(){ prompt('Link kopieren:', url); });
+    if(q.dataset.q === 'frei') ensureFresh().then(function(){
+      var x = ctx({ dataset:{ f:c.f.id, j:c.j.id, r:c.r.id, v:c.v.id, m:c.m.id } }); if(!x.m) return;
+      commit('Freigeschaltet: ' + x.m.titel + (k ? ' (' + k.name + ')' : ''), function(){
+        [x.v, x.m].forEach(function(o){ if(!sichtbarSuS(o, k)){ var z = zustand(o, k); setZustand(o, k, false, gesperrt(o, k) ? null : z.ab); } });
+      });
+      var w = $('.qr-warn', aside); if(w) w.remove();
+    }).catch(fail);
+  });
+}
+function vollbild(el){
+  if(document.fullscreenElement) document.exitFullscreen().catch(function(){});
+  else if(el.requestFullscreen) el.requestFullscreen().catch(function(){});
+}
+/* Präsentieren: Pfeiltasten → nächstes/vorheriges Material, F → Vollbild (nicht beim Schreiben) */
+document.addEventListener('keydown', function(e){
+  var vs = viewerState; if(!vs || vs.closed || e.ctrlKey || e.metaKey || e.altKey || istEingabe(e.target)) return;
+  if(e.key === 'ArrowRight'){ var n = nextOf(vs.c); if(n){ e.preventDefault(); openCtx(n, true); } }
+  else if(e.key === 'ArrowLeft'){ var p = prevOf(vs.c); if(p){ e.preventDefault(); openCtx(p, true); } }
+  else if(e.key === 'f' || e.key === 'F'){ e.preventDefault(); vollbild(vs.el); }
+});
 function openCtx(x, replace){ return openFile(x.m.datei, x.m.titel, x.m.typ, x, replace); }
 function openNext(){
   var n = viewerState && nextOf(viewerState.c);
@@ -1956,7 +2092,8 @@ function materialForm(loc, m, bereich, k){
   var ortHtml = '<fieldset><legend>Ort</legend><div class="grid2">'
     + '<label class="f"><span>Fach</span><select name="o_f"></select></label><label class="f"><span>Jahrgang</span><select name="o_j"></select></label></div>'
     + '<label class="f"><span>Reihe</span><select name="o_r"></select></label><div class="newname" data-for="o_r"><input type="text" name="o_r_new" placeholder="Name der neuen Reihe"></div>'
-    + '<label class="f"><span>Unterrichtsvorhaben</span><select name="o_v"></select></label><div class="newname" data-for="o_v"><input type="text" name="o_v_new" placeholder="Name des neuen Vorhabens"></div></fieldset>';
+    + '<label class="f"><span>Unterrichtsvorhaben</span><select name="o_v"></select></label><div class="newname" data-for="o_v"><input type="text" name="o_v_new" placeholder="Name des neuen Vorhabens"></div>'
+    + (isNew ? '' : '<label class="check" style="margin:.2rem 0 0"><input type="checkbox" name="kopie">Als Kopie dort anlegen (Original bleibt)</label>') + '</fieldset>';
   var titleNew = function(b){ return b === 'lk' ? 'Lehrkraft-Material hinzufügen' : 'Unterrichtsmaterial hinzufügen'; };
   return openForm({
     title: isNew ? titleNew(m.bereich) : 'Material bearbeiten', submit: isNew ? 'Hinzufügen' : 'Speichern', deletable: !isNew, noFocus:true,
@@ -2011,7 +2148,7 @@ function materialForm(loc, m, bereich, k){
       }
       sr.addEventListener('change', function(){ fill(3); pruefeErsetzen(); });
       sv.addEventListener('change', function(){ fill(4); });
-      var typ = form.typ, ph = $('#pruef-hint', form), bh = $('#bereich-hint', form), sRow = $('#sichtbar-row', form);
+      var typ = form.typ, ph = $('#pruef-hint', form), bh = $('#bereich-hint', form), sRow = $('#sichtbar-row', form), fileIn = form.querySelector('input[name=datei__file]');
       var fh = form.querySelector('fieldset[data-slot=datei] .slot-file .hint'), h3 = form.querySelector('h3');
       function bereichNow(){ return (form.querySelector('input[name=bereich]:checked') || {}).value || 'sus'; }
       function sync(){
@@ -2021,6 +2158,11 @@ function materialForm(loc, m, bereich, k){
         var buch = typ.value === 'buch', slotFs = form.querySelector('fieldset[data-slot=datei]'), mh = $('#multi-hint', form);
         $('#buch-row', form).hidden = !buch; if(slotFs) slotFs.hidden = buch; if(mh) mh.hidden = buch;
         form.titel.placeholder = buch ? 'z. B. S. 112 Nr. 4 a–c' : '';
+        /* Tafelbild: am iPad direkt die Kamera, Titel mit Datum */
+        var tb = typ.value === 'tafelbild';
+        if(tb){ fileIn.setAttribute('accept', 'image/*'); fileIn.setAttribute('capture', 'environment'); fileIn.multiple = false; }
+        else { fileIn.removeAttribute('capture'); if(fileIn.getAttribute('accept') === 'image/*') fileIn.removeAttribute('accept'); if(isNew) fileIn.multiple = true; }
+        if(tb && !form.titel.value) form.titel.value = 'Tafelbild ' + datumKurz(heute());
         bh.textContent = lk ? 'SuS sehen es nie.' : '';
         if(fh) fh.textContent = lk ? '' : 'Videos bitte als Link.';
         if(isNew) h3.textContent = titleNew(bereichNow());
@@ -2029,7 +2171,7 @@ function materialForm(loc, m, bereich, k){
         x.addEventListener('change', function(){ if(bereichNow() === 'sus' && typ.value === 'pruefung') typ.value = 'ab'; sync(); });
       });
       typ.addEventListener('change', sync);
-      var fileIn = form.querySelector('input[name=datei__file]'); if(isNew) fileIn.multiple = true;
+      if(isNew && typ.value !== 'tafelbild') fileIn.multiple = true;
       form.addEventListener('change', function(e){
         if(e.target.name === 'datei__file' && e.target.files.length > 1){
           var many = Array.prototype.slice.call(e.target.files), fx = { f:sf.value, j:sj.value };
@@ -2050,6 +2192,7 @@ function materialForm(loc, m, bereich, k){
       sync();
     },
     collect:function(form, out){
+      out.kopie = !!(form.kopie && form.kopie.checked);
       out.o = { f:form.o_f.value, j:form.o_j.value, r:form.o_r.value, v:form.o_v.value, rNew:form.o_r_new.value.trim(), vNew:form.o_v_new.value.trim() };
       out.bereich = form.typ.value === 'pruefung' ? 'lk' : ((form.querySelector('input[name=bereich]:checked') || {}).value || 'sus');
       out.sichtbar = form.sichtbar.checked;
@@ -2062,6 +2205,125 @@ function materialForm(loc, m, bereich, k){
     }
   });
 }
+/* ---------- Mehrfachauswahl (Bearbeiten-Modus, aktuelle Reihe) ---------- */
+var auswahl = null;   // { Material-ID: 1 } oder null
+function auswahlToggle(mid){ auswahl = auswahl || {}; if(auswahl[mid]) delete auswahl[mid]; else auswahl[mid] = 1; auswahlZeigen(); }
+function auswahlEnde(){ auswahl = null; auswahlZeigen(); }
+function auswahlReihe(){ var p = hashParts(); if(p[0] !== 'f' || !p[3]) return null; var f = findIn(data.faecher, p[1]), j = f && findIn(f.jahrgaenge, p[2]), r = j && findIn(j.reihen, p[3]); return r ? { f:f, j:j, r:r } : null; }
+function auswahlListe(){
+  var x = auswahlReihe(), out = []; if(!x || !auswahl) return out;
+  (x.r.vorhaben || []).forEach(function(v){ (v.materialien || []).forEach(function(m){ if(auswahl[m.id]) out.push({ f:x.f, j:x.j, r:x.r, v:v, m:m }); }); });
+  return out;
+}
+function auswahlZeigen(){
+  var bar = $('#auswahl-bar');
+  if(auswahl && (!editing || !auswahlReihe())) auswahl = null;
+  document.body.classList.toggle('auswahl', !!auswahl);
+  Array.prototype.forEach.call(document.querySelectorAll('[data-act=edit-m][data-m]'), function(el){ el.classList.toggle('gewaehlt', !!(auswahl && auswahl[el.dataset.m])); });
+  if(!auswahl){ if(bar) bar.remove(); return; }
+  if(!bar){ bar = document.createElement('div'); bar.id = 'auswahl-bar'; bar.className = 'auswahl-bar'; document.body.appendChild(bar);
+    bar.addEventListener('click', function(e){ var q = e.target.closest('[data-a]'); if(q) auswahlAktion(q.dataset.a); }); }
+  var n = auswahlListe().length;
+  bar.innerHTML = '<b>' + (n ? n + ' ausgewählt' : 'Material antippen') + '</b>'
+    + (n ? '<button type="button" class="pillbtn" data-a="ein">' + ico('eye') + 'Einblenden</button><button type="button" class="pillbtn" data-a="aus">' + ico('eyeoff') + 'Ausblenden</button>'
+      + '<button type="button" class="pillbtn" data-a="move">' + ico('grip') + 'Verschieben</button><button type="button" class="pillbtn danger" data-a="del">' + ico('trash') + 'Löschen</button>' : '')
+    + '<button type="button" class="iconbtn" data-a="ende" aria-label="Auswahl beenden">' + ico('close') + '</button>';
+}
+function auswahlAktion(a){
+  if(a === 'ende') return auswahlEnde();
+  ensureFresh().then(function(){
+    var l = auswahlListe(), x = auswahlReihe(); if(!l.length || !x) return;
+    var k = wahlKurs(x.r), fuer = k ? ' (' + k.name + ')' : '';
+    if(a === 'ein' || a === 'aus'){
+      var aus = a === 'aus', ziel = l.filter(function(y){ return y.m.bereich !== 'lk' && y.m.typ !== 'tag'; });
+      if(!ziel.length){ toast('Lehrkraft-Material ist für SuS nie sichtbar.'); return; }
+      return commit((aus ? 'Ausgeblendet: ' : 'Eingeblendet: ') + ziel.length + ' Materialien' + fuer, function(){
+        ziel.forEach(function(y){ var z = zustand(y.m, k); setZustand(y.m, k, aus, aus ? z.ab : (gesperrt(y.m, k) ? null : z.ab)); });
+      });
+    }
+    if(a === 'move'){
+      return openForm({ title:l.length + ' Materialien verschieben', submit:'Verschieben', fields:[
+        { name:'v', label:'Unterrichtsvorhaben', type:'select', value:l[0].v.id, options:x.r.vorhaben.map(function(v, i){ return [v.id, (i + 1) + '. ' + v.titel]; }) }
+      ]}).then(function(o){
+        if(!o) return; var zv = findIn(x.r.vorhaben, o.v); if(!zv) return;
+        commit('Verschoben: ' + l.length + ' Materialien → ' + zv.titel, function(){
+          l.forEach(function(y){ if(y.v === zv) return; y.v.materialien.splice(y.v.materialien.indexOf(y.m), 1); zv.materialien.push(y.m); });
+        });
+        auswahlEnde();
+      });
+    }
+    if(a === 'del'){
+      var es = [];
+      return commit('Material entfernt: ' + l.length + ' Materialien', function(){ l.forEach(function(y){ es.push(inKorb(y.f, y.j, y.r, y.v, y.m).id); }); }).then(function(){
+        auswahlEnde();
+        toast(l.length + ' Materialien im Papierkorb.', { label:'Rückgängig', fn:function(){ korbZurueckAlle(es); } });
+      });
+    }
+  }).catch(fail);
+}
+function korbZurueckAlle(ids){
+  var es = ids.map(function(id){ return findIn(data.papierkorb, id); }).filter(Boolean); if(!es.length) return;
+  commit('Wiederhergestellt: ' + es.length + ' Materialien', function(){ es.slice().reverse().forEach(function(e){ wiederherstellen(e); }); });
+  toast(es.length + ' Materialien sind wieder da.');
+}
+window.addEventListener('hashchange', function(){ if(auswahl) auswahlEnde(); });
+/* ---------- Tastenkürzel am Laptop: E = Bearbeiten, / = Suche, N = neues Material (Vorhaben unter der Maus) ---------- */
+document.addEventListener('keydown', function(e){
+  if(e.ctrlKey || e.metaKey || e.altKey || istEingabe(e.target) || (e.target.closest && e.target.closest('select'))) return;
+  if(viewerState || menuEl || ($('#sheet') && $('#sheet').open) || $('.sync-modal') || document.body.classList.contains('kurs') || !(canEdit() && keyB && data)) return;
+  if(e.key === 'Escape' && auswahl){ auswahlEnde(); return; }
+  if(e.key === 'e' || e.key === 'E'){ e.preventDefault(); $('#edit-toggle').click(); }
+  else if(e.key === '/'){ e.preventDefault(); location.hash = '#/suche'; setTimeout(function(){ var i = $('#such-feld'); if(i) i.focus(); }, 30); }
+  else if(e.key === 'n' || e.key === 'N'){
+    e.preventDefault();
+    var row = zeigerEl && document.contains(zeigerEl) && zeigerEl.closest ? zeigerEl.closest('.row[data-v]') : null, b = row && row.querySelector('[data-act=add-m][data-bereich=sus]');
+    if(b){ var cx = ctx(b); cx._el = b; actions['add-m'](cx); } else $('#add-material').click();
+  }
+});
+
+/* ---------- Kleines Menü an einem Knopf ---------- */
+var menuEl = null;
+function schliesseMenu(){ if(menuEl){ menuEl.remove(); menuEl = null; } document.removeEventListener('click', menuWeg, true); }
+function menuWeg(e){ if(menuEl && menuEl.contains(e.target)) return; schliesseMenu(); }
+function menuAt(btn, items){
+  schliesseMenu();
+  var m = document.createElement('div'); m.className = 'popmenu'; m.setAttribute('role', 'menu');
+  m.innerHTML = items.map(function(it, i){ return '<button type="button" role="menuitem" data-i="' + i + '">' + ico(it.icon) + '<span>' + esc(it.label) + '</span></button>'; }).join('');
+  document.body.appendChild(m); menuEl = m;
+  var b = btn.getBoundingClientRect(), w = m.offsetWidth;
+  m.style.top = (b.bottom + scrollY + 4) + 'px';
+  m.style.left = Math.max(8, Math.min(b.right - w, innerWidth - w - 8)) + scrollX + 'px';
+  m.addEventListener('click', function(e){ var x = e.target.closest('[data-i]'); if(!x) return; e.stopPropagation(); schliesseMenu(); items[+x.dataset.i].fn(); });
+  setTimeout(function(){ if(menuEl === m) document.addEventListener('click', menuWeg, true); }, 0);
+  m.querySelector('button').focus();
+}
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && menuEl){ schliesseMenu(); } });
+window.addEventListener('hashchange', schliesseMenu);
+/* Alle Vorhaben bis einschließlich diesem für SuS freischalten (gewählter Kurs) */
+function bisHierFrei(c){
+  ensureFresh().then(function(){
+    var x = ctx({ dataset:{ f:c.f.id, j:c.j.id, r:c.r.id, v:c.v.id } }), r = x.r, k = wahlKurs(r), i = r.vorhaben.indexOf(x.v); if(i < 0) return;
+    var neu = r.vorhaben.slice(0, i + 1).filter(function(v){ return !sichtbarSuS(v, k); });
+    if(!neu.length){ toast('Schon alles bis hier freigeschaltet.'); return; }
+    commit('Freigeschaltet bis: ' + x.v.titel + (k ? ' (' + k.name + ')' : ''), function(){
+      neu.forEach(function(v){ var z = zustand(v, k); setZustand(v, k, false, gesperrt(v, k) ? null : z.ab); });
+    });
+    toast(neu.length + ' Vorhaben freigeschaltet.');
+  }).catch(fail);
+}
+/* „Heute“-Markierung: gilt nur am heutigen Tag, pro Kurs */
+function heuteSetzen(c, an){
+  ensureFresh().then(function(){
+    var x = ctx({ dataset:{ f:c.f.id, j:c.j.id, r:c.r.id, v:c.v.id } }), r = x.r, k = wahlKurs(r), key = k ? k.id : '_';
+    commit((an ? 'Heute: ' : 'Heute entfernt: ') + x.v.titel, function(){
+      var h = r.heute || {};
+      Object.keys(h).forEach(function(q){ if(!h[q] || h[q].am !== heute()) delete h[q]; });
+      if(an) h[key] = { v:x.v.id, am:heute() }; else delete h[key];
+      if(Object.keys(h).length) r.heute = h; else delete r.heute;
+    });
+  }).catch(fail);
+}
+
 /* ---------- Papierkorb: gelöschtes Material 30 Tage wiederherstellbar (nur Lehrkraft) ----------
    data.papierkorb = [{ id, am, m, ort:{ f, j, r, v, vTitel, vIndex, mIndex, text } }] – Dateien bleiben liegen, bis der Eintrag endgültig gelöscht wird. */
 var KORB_TAGE = 30;
@@ -2140,8 +2402,10 @@ function saveMaterial(loc, existing, bereich){
       var needP = !buch && (schutz === 'pruefung' && (v.datei.mode === 'file' || keepF)) || (keepF && cur.m.datei.schutz === 'pruefung');
       return (needP ? askPruefung() : Promise.resolve(true)).then(function(ok){
         if(!ok) return;
-        var target = cur ? cur.m : { id:uid(), datei:null, url:null };
-        return commit((cur ? 'Material geändert: ' : 'Material: ') + v.titel, function(){
+        /* Kopie: gleiche Datei (wird erst gelöscht, wenn sie nirgends mehr verwendet wird), Original bleibt unverändert */
+        var kopie = !!(v.kopie && cur), target = kopie ? klonMaterial(cur.m) : cur ? cur.m : { id:uid(), datei:null, url:null };
+        if(kopie) cur = null;
+        return commit((kopie ? 'Material kopiert: ' : cur ? 'Material geändert: ' : 'Material: ') + v.titel, function(){
           var r = o.r === '__neu' ? null : findIn(j.reihen, o.r);
           if(!r){ r = { id:uniqueId(slug(o.rNew), j.reihen), titel:o.rNew, inhaltsfeld:'', uebersicht:null, titelbild:null, vorhaben:[] }; j.reihen.push(r); }
           var vh = o.v === '__neu' ? null : findIn(r.vorhaben, o.v);
@@ -2163,7 +2427,7 @@ function saveMaterial(loc, existing, bereich){
           }).then(function(){
             if(cur && cur.v !== vh){ cur.v.materialien.splice(cur.v.materialien.indexOf(cur.m), 1); }
             if(vh.materialien.indexOf(target) < 0) vh.materialien.push(target);
-            if(oldFiles.length && askDelete(oldFiles)) loeschenSpaeter(oldFiles);
+            if(oldFiles.length && (kopie ? true : askDelete(oldFiles))) loeschenSpaeter(oldFiles);
           }).then(function(){
             var want = '#/f/' + encodeURIComponent(f.id) + '/' + encodeURIComponent(j.id) + '/' + encodeURIComponent(r.id);
             if(location.hash !== want) setTimeout(function(){ location.hash = want; }, 0);
@@ -2172,6 +2436,10 @@ function saveMaterial(loc, existing, bereich){
       });
     });
   }).catch(fail);
+}
+function klonMaterial(m){
+  var x = JSON.parse(JSON.stringify(m)); x.id = uid(); delete x.kurse; delete x.quelle; delete x.hash;
+  return x;
 }
 /* Datei eines vorhandenen Materials ersetzen – Titel, Art, Sichtbarkeit usw. bleiben */
 function ersetzeDatei(f, j, r, mid, file){
@@ -2497,6 +2765,14 @@ var actions = {
     var z = zustand(c.m, c.k), an = !z.ausgeblendet;
     commit((an ? 'Ausgeblendet: ' : 'Eingeblendet: ') + c.m.titel + (c.k ? ' (' + c.k.name + ')' : ''), function(){ setZustand(c.m, c.k, an, z.ab); });
   }),
+  'auswahl-an': function(){ auswahl = auswahl || {}; auswahlZeigen(); },
+  'menu-v': function(c){
+    var r = c.r, v = c.v, k = wahlKurs(r), fuer = k ? ' (' + k.name + ')' : '', hm = heuteMarke(r, k) === v.id;
+    menuAt(c._el, [
+      { icon:'eye', label:'Bis hier freischalten' + fuer, fn:function(){ bisHierFrei(c); } },
+      { icon:'clock', label:hm ? 'Nicht mehr als „heute“ markieren' : 'Als „heute“ markieren' + fuer, fn:function(){ heuteSetzen(c, !hm); } }
+    ]);
+  },
   'kurs-wahl': function(c){ if(c.r){ setWahl(c.r, c.k); render(); } },
   'add-k': needAdmin(function(c){
     var ks = kurseOf(c.r), vorlage = wahlKurs(c.r);
@@ -2679,6 +2955,8 @@ document.addEventListener('click', function(e){
   }
   var b = e.target.closest('[data-act]');
   if(!b || !actions[b.dataset.act]) return;
+  /* Mehrfachauswahl: im Auswahl-Modus oder mit Strg/⌘/Umschalt antippen = markieren statt öffnen */
+  if(b.dataset.act === 'edit-m' && editing && b.dataset.m && (auswahl || e.ctrlKey || e.metaKey || e.shiftKey)){ e.preventDefault(); auswahlToggle(b.dataset.m); return; }
   e.preventDefault();
   var cx = ctx(b); cx._el = b;
   actions[b.dataset.act](cx);
@@ -3013,7 +3291,9 @@ var LK_EXT = ['docx','doc','odt','pages','pptx','ppt','key','odp','xlsx','xls','
 var KURS_RE = /(?:^|[\s_-])(mathematik|mathe|ma|m|physik|ph|p|naturwissenschaften|nw)[\s_-]*(\d{1,2}|ef|q1|q2)(?=$|[\s_-])/i;
 var STATUS_LABEL = { neu:'neu', geaendert:'ersetzt alte Datei', gleich:'unverändert', vorhanden:'schon da – ersetzen?', gesperrt:'' };
 function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 0); }
-function hashParts(){ return location.hash.replace(/^#\/?/, '').split('/').map(function(x){ try{ return decodeURIComponent(x); }catch(e){ return x; } }); }
+/* Route ohne Zusatz „?m=ID“ (Direktlink auf ein Material) */
+function hashParts(){ return location.hash.split('?')[0].replace(/^#\/?/, '').split('/').map(function(x){ try{ return decodeURIComponent(x); }catch(e){ return x; } }); }
+function hashMaterial(){ var q = /[?&]m=([^&]+)/.exec(location.hash.split('?').slice(1).join('?') ? '?' + location.hash.split('?').slice(1).join('?') : ''); return q ? decodeURIComponent(q[1]) : null; }
 function parseKurs(seg){
   var m = KURS_RE.exec(seg || ''); if(!m) return null;
   var rest = (seg.slice(0, m.index) + ' ' + seg.slice(m.index + m[0].length)).replace(/^[\s_-]*\d{4}(?=[\s_-]|$)/, '').replace(/[\s_-]+/g, ' ').trim();
@@ -3906,7 +4186,7 @@ function exportReiheSuS(f, j, r, k){
    ===================================================================== */
 $('#reload').innerHTML = ico('refresh');
 $('#search-btn').innerHTML = ico('search');
-$('#kurs-exit').addEventListener('click', function(){ location.hash = location.hash.replace(/^#\/kurs\//, '#/f/'); });
+$('#kurs-exit').addEventListener('click', function(){ location.hash = location.hash.split('?')[0].replace(/^#\/kurs\//, '#/f/'); });
 $('#settings-link').innerHTML = ico('gear') + 'Einstellungen';
 $('#edit-toggle').addEventListener('click', function(){
   if(editing){ editing = false; render(); return; }
@@ -3931,7 +4211,7 @@ window.addEventListener('hashchange', function(){ if(viewerState) closeViewer();
 
 function boot(){
   var teacher = canEdit();
-  if(/^#\/kurs\//.test(location.hash)){ if(!teacher) saveJSON(KURS_KEY, location.hash); }
+  if(/^#\/kurs\//.test(location.hash)){ if(!teacher) saveJSON(KURS_KEY, location.hash.split('?')[0]); }
   else if(!location.hash && !teacher){ var k = loadJSON(KURS_KEY); if(k) history.replaceState(null, '', k); }
   zugang = undefined; render();
   loadZugang(false).then(function(z){
