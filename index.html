@@ -85,9 +85,11 @@ h1,h2,h3{font-family:var(--serif);font-weight:700;line-height:1.15;margin:0}
 .pillbtn{display:inline-flex;align-items:center;gap:.4rem;text-decoration:none;color:inherit;border:1px solid var(--line);background:var(--sheet);border-radius:999px;padding:.45rem .9rem;min-height:42px;cursor:pointer;font-weight:600;white-space:nowrap}
 .pillbtn.dark{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
 .pillbtn.add{background:var(--primary);color:#fff;border-color:var(--primary)}
+/* iPad: Teilen im Viewer deutlich (nicht mit Safari-Teilen verwechseln) */
+.pillbtn.teilen{background:var(--primary);color:#fff;border-color:var(--primary)}
 .admin-only{display:none !important}
 .can-edit .admin-only{display:inline-flex !important}
-@media (max-width:560px){.pillbtn .lbl{display:none}.pillbtn{padding:.45rem .65rem}}
+@media (max-width:560px){.pillbtn .lbl{display:none}.pillbtn{padding:.45rem .65rem}.pillbtn.teilen .lbl{display:inline}}
 
 main{max-width:1040px;margin:0 auto;padding:1.2rem 1rem 4rem}
 
@@ -274,6 +276,9 @@ dialog::backdrop{background:rgba(10,14,20,.5)}
 .pad button{min-height:58px;border-radius:14px;border:1px solid var(--line);background:var(--page);font-size:1.4rem;font-weight:600;cursor:pointer}
 .pad button:active{background:var(--soft)}
 .lock-card .check{justify-content:center;margin:1rem 0 0;font-weight:500;color:var(--muted)}
+.lock-tipp{margin:.9rem auto 0;max-width:380px;text-align:center;font-size:.9rem;color:var(--muted)}
+.lock-tipp .pillbtn{min-height:0;padding:.1rem .55rem;pointer-events:none;vertical-align:middle;font-size:.85rem}
+.lock-tipp .pillbtn svg{width:1em;height:1em}
 .codeinput{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
 
 /* Anzeige */
@@ -1140,7 +1145,9 @@ function renderLock(errText){
     + '<div class="pad" id="pad">' + [1,2,3,4,5,6,7,8,9].map(function(n){ return '<button data-k="' + n + '">' + n + '</button>'; }).join('')
     + '<button data-k="del" aria-label="Löschen">⌫</button><button data-k="0">0</button><button data-k="ok" aria-label="Bestätigen">✓</button></div>'
     + '<label class="check"><input type="checkbox" id="remember" checked>Auf diesem Gerät merken</label>'
-    + '<p class="status err" id="lock-err">' + esc(errText || '') + '</p></div></div>';
+    + '<p class="status err" id="lock-err">' + esc(errText || '') + '</p></div>'
+    + (IOS ? '<p class="lock-tipp" id="lock-tipp">In GoodNotes nur dieses Bild? Im Material oben auf <span class="pillbtn teilen">' + ico('share') + 'Teilen</span> tippen.</p>' : '')
+    + '</div>';
 }
 function renderNotSetUp(){
   return '<div class="empty-state" style="margin-top:2rem"><h2 style="margin-bottom:.5rem">Noch nicht eingerichtet</h2>'
@@ -1489,6 +1496,7 @@ var INFO = [
   { titel:'Für Schülerinnen und Schüler', offen:true, eintraege:[
     ['Wie komme ich zum Material?', 'Über den Link oder QR-Code deiner Lehrkraft. Beim ersten Mal den Zugangscode eingeben – danach merkt sich das Gerät ihn.'],
     ['Wie speichere ich eine Datei?', 'Material öffnen → „Teilen“ (iPad) bzw. „Speichern“ (Laptop). „Alle Materialien herunterladen“ unten in der Reihe lädt alles auf einmal.'],
+    ['Material in GoodNotes', 'Material öffnen → oben den blauen Knopf „Teilen“ → GoodNotes. Nicht das Teilen von Safari: Das schickt nur die Code-Seite.'],
     ['Was bedeuten die Sterne?', '★ Basis · ★★ Standard · ★★★ Erweiterung.'],
     ['Checkliste', 'Aussage antippen: 1× noch unsicher (gelb), 2× kann ich sicher (grün). Die Einschätzung bleibt nur auf deinem Gerät.'],
     ['Ich sehe zu wenig / zu viel', 'Du siehst nur, was für deinen Kurs freigeschaltet ist. Die markierte Einheit ist die aktuelle. Zur ganzen Sammlung (nur Lehrkräfte): 5× auf das Fach-Schild oben tippen.']
@@ -1774,7 +1782,7 @@ function openFile(F, titel, typ, c, replace){
       vs.url = url;
       var dl = $('[data-v=dl]', v), nurTeilen = teilenStattLaden(file); dl.href = url; dl.download = niceName; dl.hidden = nurTeilen;
       if(navigator.canShare && navigator.canShare({ files:[file] })){
-        var sh = $('[data-v=share]', v); sh.hidden = false;
+        var sh = $('[data-v=share]', v); sh.hidden = false; if(nurTeilen) sh.classList.add('teilen');
         sh.onclick = function(){ navigator.share({ files:[file], title:titel }).catch(function(){}); };
       }
       if(ext === 'pdf') return renderPdf(body, plain);

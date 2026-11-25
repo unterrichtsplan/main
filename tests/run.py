@@ -312,6 +312,7 @@ with sync_playwright() as p:
     page2.goto(SITE); page2.evaluate("localStorage.clear()")
     page2.goto(SITE + '#/kurs/physik/8/optische-instrumente'); page2.reload()
     page2.wait_for_selector('#pad')
+    check('Laptop: Sperrseite ohne GoodNotes-Tipp', page2.locator('#lock-tipp').count() == 0)
     for k in '1234': page2.click(f'#pad [data-k="{k}"]')
     page2.wait_for_selector('.rows', timeout=30000)
     check('SuS: kein Lehrkraft-Knopf', page2.locator('#kurs-exit').is_hidden())
@@ -344,12 +345,14 @@ with sync_playwright() as p:
       navigator.share = async d => { window.__geteilt.push((d.files || []).map(f => f.name).join(',') || d.url || ''); };""")
     pi = ipad.new_page(); pi.on('pageerror', lambda e: errors.append(str(e)))
     pi.goto(SITE + '#/kurs/physik/8/optische-instrumente'); pi.wait_for_selector('#pad')
+    check('iPad: Sperrseite mit GoodNotes-Tipp', pi.locator('#lock-tipp').is_visible() and 'GoodNotes' in pi.inner_text('#lock-tipp'))
     for k in '1234': pi.click(f'#pad [data-k="{k}"]')
     pi.wait_for_selector('.rows', timeout=30000); time.sleep(0.4)
     fchip = pi.locator('.chip[data-slot=datei]').first
     if fchip.count():
         fchip.click(); pi.wait_for_selector('.viewer [data-v=share]:not([hidden])', timeout=20000)
         check('iPad: Viewer ohne Herunterladen, mit Teilen', pi.locator('.viewer [data-v=dl]').is_hidden() and pi.locator('.viewer [data-v=share]').is_visible())
+        check('iPad: Teilen-Knopf hervorgehoben', 'teilen' in (pi.get_attribute('.viewer [data-v=share]', 'class') or ''))
         pi.click('.viewer [data-v=share]'); time.sleep(0.3)
         check('iPad: Teilen übergibt die Datei', len(pi.evaluate('window.__geteilt')) == 1 and '.' in pi.evaluate('window.__geteilt')[0], pi.evaluate('window.__geteilt'))
         pi.click('.viewer [data-v=close]'); time.sleep(0.4)
